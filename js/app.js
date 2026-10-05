@@ -9,6 +9,7 @@ import * as st from './state.js';
 import { createLocalStore, createRemoteStore } from './store.js';
 import { createAuth } from './auth.js';
 import { createGate } from './gate.js';
+import { startPets } from './pets.js';
 import { SUPABASE_URL, SUPABASE_KEY, LOCAL_KEY } from './config.js';
 
 // ---------- small helpers ----------
@@ -417,6 +418,12 @@ async function start() {
   else if (session) await gate.admit(session);
   else gate.show('login');
 }
+startPets({
+  svg: document.querySelector('.room svg'),
+  room: document.querySelector('.room'),
+  label: document.getElementById('roomhint'),
+  reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
+});
 start();
 
 // Exposed for tests only.

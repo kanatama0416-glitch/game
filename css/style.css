@@ -3,6 +3,7 @@
   --bg:#EEF2EA; --paper:#FFFFFF; --ink:#22302B; --muted:#66756D; --line:#D6DFD3;
   --accent:#2D63D8; --accent-soft:#E2EAFB; --sticker:#FFCF3F; --pink:#F08BA6; --leaf:#4E9A62; --danger:#C2365C;
   --wall:#E4ECF6; --wall2:#D5E1EF; --floor:#D7B58A; --floor2:#C9A374; --wood:#9C6B43; --sky:#BFE1F5;
+  --fur:#E9A65A; --belly:#FFF4E0; --skin:#C9DE96; --shell:#6FAE6A; --shell-line:#2F6B3A; --rim:#F1CF6E;
   --display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
   --body:"Noto Sans JP","Hiragino Sans",system-ui,sans-serif;
   --mono:"DM Mono",ui-monospace,"SFMono-Regular",monospace;
@@ -10,11 +11,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#151B18; --paper:#1F2723; --ink:#EDF2EC; --muted:#9AA79F; --line:#33403A;
   --accent:#86A8FF; --accent-soft:#25304A; --sticker:#F2C43A; --pink:#E98AA4; --leaf:#67B47B; --danger:#FF8FAE;
-  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73; color-scheme:dark}}
+  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73;
+  --fur:#D08E4D; --belly:#E9DCC6; --skin:#9EB872; --shell:#4C8A50; --shell-line:#1E4426; --rim:#C7A14A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#151B18; --paper:#1F2723; --ink:#EDF2EC; --muted:#9AA79F; --line:#33403A;
   --accent:#86A8FF; --accent-soft:#25304A; --sticker:#F2C43A; --pink:#E98AA4; --leaf:#67B47B; --danger:#FF8FAE;
-  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73; color-scheme:dark}
+  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73;
+  --fur:#D08E4D; --belly:#E9DCC6; --skin:#9EB872; --shell:#4C8A50; --shell-line:#1E4426; --rim:#C7A14A; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 .days .until{display:block;font-size:.8rem;font-weight:500}
@@ -211,3 +214,45 @@ h2{flex-direction:column;align-items:flex-start;gap:2px}
 .gate-msg{margin:0;font-size:.85rem;font-weight:700;color:var(--danger);min-height:1.2em}
 .gate-msg.ok{color:var(--leaf)}
 #app[hidden]{display:none}
+
+/* pets: hamster and turtle (drawn like the room items: thick ink outline, flat fill) */
+.pet{cursor:pointer;outline:none}
+.pet:focus-visible .pet-hop{outline:2px solid var(--accent)}
+.ham-fur{fill:var(--fur);stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.ham-belly{fill:var(--belly)}
+.ham-stripe{fill:none;stroke-width:0}
+.ham-leg{fill:var(--belly);stroke:var(--ink);stroke-width:1.8}
+.ham-ear-in,.ham-cheek{fill:var(--pink)}
+.ham-cheek{opacity:.75}
+.ham-eye{fill:#1B2420} .ham-shine{fill:#fff} /* eyes stay dark in both themes */
+.ham-nose{fill:var(--pink);stroke:var(--ink);stroke-width:.8}
+.ham-whisk line{stroke:var(--ink);stroke-width:.8;stroke-linecap:round}
+.tur-skin,.tur-leg{fill:var(--skin);stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.tur-leg{stroke-width:1.8}
+.tur-shell{fill:var(--shell);stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.tur-rim{fill:var(--rim);stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.tur-pattern{fill:none;stroke:var(--shell-line);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.tur-smile{fill:none;stroke:#1B2420;stroke-width:.9;stroke-linecap:round}
+.ham-leg,.ham,.ham-nose,.ham-whisk,.pet-hop,.tur-head,.tur-leg{transform-box:fill-box;transform-origin:center}
+.ham{transform-origin:50% 100%}
+.tur-head{transform-origin:0% 100%;transition:transform .45s ease}
+.tur-leg{transition:transform .45s ease}
+.walking .ham-leg.a,.walking .tur-leg.a{animation:pet-step .32s ease-in-out infinite}
+.walking .ham-leg.b,.walking .tur-leg.b{animation:pet-step .32s ease-in-out infinite .16s}
+.walking .tur-leg.a{animation-duration:1s}
+.walking .tur-leg.b{animation-duration:1s;animation-delay:.5s}
+.walking .ham{animation:pet-bob .32s ease-in-out infinite}
+.walking .tur-head{animation:pet-nod 1s ease-in-out infinite}
+.sniff .ham-nose{animation:pet-sniff .35s ease-in-out infinite}
+.sniff .ham-whisk{animation:pet-whisk .35s ease-in-out infinite}
+.hiding .tur-head{transform:translateX(-8px) scale(.6)}
+.hiding .tur-leg{transform:scaleY(.25) translateY(-4px)}
+.hop .pet-hop{animation:pet-hop .45s cubic-bezier(.3,1.6,.5,1)}
+.pet-heart{fill:var(--pink);stroke:var(--ink);stroke-width:1;transform-box:fill-box;animation:pet-rise 1s ease-out forwards}
+@keyframes pet-step{50%{transform:translateY(-1.6px)}}
+@keyframes pet-bob{50%{transform:translateY(-.8px)}}
+@keyframes pet-nod{50%{transform:translateY(-.8px) rotate(-3deg)}}
+@keyframes pet-sniff{50%{transform:scale(1.35)}}
+@keyframes pet-whisk{50%{transform:rotate(-8deg)}}
+@keyframes pet-hop{40%{transform:translateY(-12px)}}
+@keyframes pet-rise{to{transform:translateY(-16px);opacity:0}}

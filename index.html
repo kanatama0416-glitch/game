@@ -12,8 +12,8 @@
 -->
 <script>
   (() => {
-    const APP_VERSION = '2026-10-06.5';
-    const MODULES = ['app', 'auth', 'config', 'events', 'gate', 'logic', 'state', 'store'];
+    const APP_VERSION = '2026-10-06.6';
+    const MODULES = ['app', 'auth', 'config', 'events', 'gate', 'logic', 'pets', 'state', 'store'];
     const imports = {};
     for (const m of MODULES) {
       const url = new URL('js/' + m + '.js', location.href).href;
@@ -301,6 +301,44 @@
       <g class="it" data-k="y100">
         <ellipse cx="190" cy="226" rx="70" ry="14" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2.5" stroke-dasharray="6 4"/>
       </g>
+          <!-- Pets (js/pets.js moves them along the floor; data-x = starting point) -->
+      <g class="pet" data-pet="tur" data-x="270" transform="translate(270 245)" tabindex="0" role="button" aria-label="カメ。タップすると頭をひっこめる"><g class="pet-flip"><g class="pet-hop">
+<g class="tur">
+  <ellipse class="tur-leg a" cx="-10" cy="-2.6" rx="3.6" ry="3"/>
+  <ellipse class="tur-leg b" cx="-3.5" cy="-2.6" rx="3.6" ry="3"/>
+  <ellipse class="tur-leg a" cx="5" cy="-2.6" rx="3.6" ry="3"/>
+  <ellipse class="tur-leg b" cx="10.5" cy="-2.6" rx="3.6" ry="3"/>
+  <path class="tur-skin" d="M-17 -7 L-23 -5 L-17 -3.8 Z"/>
+  <g class="tur-head">
+    <path class="tur-skin" d="M9 -6 C 11 -12 14 -14 18.5 -14 C 23.5 -14 25.5 -10.5 24.5 -7.5 C 23.5 -5 20 -4.8 17 -5.6 L 11 -4.6 Z"/>
+    <circle class="ham-eye" cx="20.3" cy="-10.6" r="1.7"/>
+    <circle class="ham-shine" cx="20.9" cy="-11.2" r=".55"/>
+    <ellipse class="ham-cheek" cx="19.6" cy="-7.4" rx="2" ry="1.3"/>
+    <path class="tur-smile" d="M22.2 -7.6 q1.2 .9 2.2 -.2"/>
+  </g>
+  <path class="tur-rim" d="M-18.5 -7.2 H15.5 V-3.6 H-18.5 Z"/>
+  <path class="tur-shell" d="M-17.5 -7.2 C -17.5 -23.5 14.5 -23.5 14.5 -7.2 Z"/>
+  <path class="tur-pattern" d="M-6.5 -7.2 L-8.5 -13 L-1.5 -18 L5.5 -13 L3.5 -7.2 M-8.5 -13 L-15.5 -11 M5.5 -13 L12.5 -11"/>
+</g>
+      </g></g></g>
+      <g class="pet" data-pet="ham" data-x="320" transform="translate(320 245)" tabindex="0" role="button" aria-label="ハムスター。タップすると跳ねる"><g class="pet-flip"><g class="pet-hop">
+<g class="ham">
+  <ellipse class="ham-leg back a" cx="-10" cy="-2.2" rx="3.4" ry="2.6"/>
+  <ellipse class="ham-leg back b" cx="-4" cy="-2.2" rx="3.4" ry="2.6"/>
+  <ellipse class="ham-leg front a" cx="6" cy="-2.2" rx="3" ry="2.4"/>
+  <ellipse class="ham-leg front b" cx="11" cy="-2.2" rx="3" ry="2.4"/>
+  <path class="ham-fur" d="M-18.5 -10 C -18.5 -24 7 -28 15 -17 C 19.5 -11 17 -4 8 -3.5 L -12 -3.5 C -16.5 -3.5 -18.5 -6 -18.5 -10 Z"/>
+  <path class="ham-belly" d="M-5 -4.6 C -1 -10.5 10 -11.5 14.6 -7.6 C 12.6 -5 9 -4.4 6.5 -4.4 L -3 -4.4 Z"/>
+  <path class="ham-stripe" d="M-12.5 -16 C -6 -21.5 1 -22.5 6.5 -20.5"/>
+  <circle class="ham-fur" cx="3.5" cy="-22.5" r="4.2"/>
+  <circle class="ham-ear-in" cx="3.5" cy="-22.5" r="2"/>
+  <circle class="ham-eye" cx="10.2" cy="-15.2" r="2"/>
+  <circle class="ham-shine" cx="10.9" cy="-15.9" r=".65"/>
+  <ellipse class="ham-cheek" cx="8.8" cy="-10.2" rx="2.9" ry="1.9"/>
+  <g class="ham-whisk"><line x1="15" y1="-12.6" x2="21.5" y2="-14.6"/><line x1="15" y1="-11.6" x2="21.5" y2="-10.2"/></g>
+  <circle class="ham-nose" cx="16.4" cy="-13.2" r="1.5"/>
+</g>
+      </g></g></g>
     </svg>
     <div class="roomhint" id="roomhint"></div>
   </div>
