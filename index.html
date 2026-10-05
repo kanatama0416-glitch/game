@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff7e8">
+  <title>ひとり商店。｜個人事業主になった！</title>
+  <meta name="description" content="個人事業主になるまでと、その後の成長を小さなゲームとして記録するアプリ。">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="ひとり商店。ホーム">
+      <span class="brand-mark">ひ</span>
+      <span>ひとり商店。</span>
+    </a>
+    <button class="icon-button" id="openSettings" type="button" aria-label="設定を開く">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm8-3.5 2-1.2-2-3.46-2.3.72a8.2 8.2 0 0 0-1.53-.89L15.65 4h-4l-.52 3.17a8.2 8.2 0 0 0-1.53.89L7.3 7.34l-2 3.46 2 1.2a8.77 8.77 0 0 0 0 1.78l-2 1.2 2 3.46 2.3-.72c.48.36 1 .66 1.53.89L11.65 22h4l.52-3.39a8.2 8.2 0 0 0 1.53-.89l2.3.72 2-3.46-2-1.2c.08-.59.08-1.19 0-1.78Z"/></svg>
+    </button>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="live-dot"></span><span id="dayLabel">開業 1日目</span></div>
+        <p class="kicker">MY LITTLE BUSINESS</p>
+        <h1><span id="shopNameHero">かな商店</span>、<br>育てています。</h1>
+        <p class="hero-note">手続きも、初めての仕事も、ちゃんと「できた日」にして残していく。</p>
+      </div>
+
+      <div class="stage-card" aria-label="事業の成長を表す仕事部屋">
+        <div class="stage-topline">
+          <div>
+            <span class="mini-label">BUSINESS ROOM</span>
+            <strong id="roomLevel">まだ何もない部屋</strong>
+          </div>
+          <div class="level-pill">LV.<span id="levelNumber">01</span></div>
+        </div>
+
+        <div class="room" id="roomScene">
+          <div class="sun-orbit" aria-hidden="true"><span></span></div>
+          <div class="window"><div class="window-sky"><i></i><i></i></div></div>
+          <div class="wall-note note-a">OPEN?</div>
+          <div class="wall-note note-b">dream → work</div>
+          <div class="wall-note note-c">¥</div>
+          <div class="shelf upgrade upgrade-5"><span class="book"></span><span class="book small"></span><span class="tiny-pot"></span></div>
+          <div class="sign upgrade upgrade-1"><span id="roomSignName">かな商店</span></div>
+          <div class="desk">
+            <div class="lamp upgrade upgrade-4"><span class="lamp-head"></span><span class="lamp-neck"></span><span class="lamp-base"></span></div>
+            <div class="laptop upgrade upgrade-6"><span></span></div>
+            <div class="paper-stack upgrade upgrade-7"><i></i><i></i><i></i></div>
+            <div class="mug upgrade upgrade-3"></div>
+          </div>
+          <div class="drawer upgrade upgrade-2"><span></span><span></span></div>
+          <div class="plant upgrade upgrade-8"><span class="leaf l1"></span><span class="leaf l2"></span><span class="leaf l3"></span><span class="stem"></span><span class="pot"></span></div>
+          <div class="floor-card upgrade upgrade-4"><span>BUSINESS</span><b>•••• 0416</b></div>
+          <div class="coin-stack upgrade upgrade-8"><i></i><i></i><i></i></div>
+          <div class="room-caption" id="roomCaption">最初の一歩を待っています。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-strip wrap" aria-label="事業ステータス">
+      <article><span>売上</span><strong id="salesValue">¥0</strong><small>累計</small></article>
+      <article><span>経費</span><strong id="expenseValue">¥0</strong><small>累計</small></article>
+      <article class="profit"><span>利益</span><strong id="profitValue">¥0</strong><small>いまのところ</small></article>
+      <div class="progress-mini">
+        <div class="progress-mini-head"><span>開業クエスト</span><b id="progressText">0 / 8</b></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </div>
+    </section>
+
+    <section class="quest-section wrap" id="questSection">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">TODAY'S QUEST</p>
+          <h2>いま、これ。</h2>
+        </div>
+        <span class="scribble-arrow" aria-hidden="true">↘</span>
+      </div>
+
+      <article class="quest-card" id="questCard">
+        <div class="quest-number" id="questNumber">01</div>
+        <div class="quest-main">
+          <div class="quest-meta"><span id="questCategory">はじめの一歩</span><span>+1 room item</span></div>
+          <h3 id="questTitle">屋号を決める</h3>
+          <p id="questDescription">自分の仕事につける、小さな名前。あとから変えても大丈夫。</p>
+          <div class="quest-tip"><span>?</span><p id="questTip">屋号は必須ではないけれど、請求書や口座名などで使えるよ。</p></div>
+        </div>
+        <button class="complete-button" id="completeQuest" type="button">
+          <span>できた！</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg>
+        </button>
+      </article>
+
+      <div class="all-clear" id="allClear" hidden>
+        <span class="clear-stamp">30 DAYS!</span>
+        <h3>最初の章、クリア。</h3>
+        <p>「開業する人」から「自分の商売を持つ人」になりました。</p>
+        <button class="secondary-button" id="restartButton" type="button">もう一度あそぶ</button>
+      </div>
+    </section>
+
+    <section class="roadmap-section wrap">
+      <div class="section-heading compact">
+        <div>
+          <p class="section-kicker">YOUR ROAD</p>
+          <h2>商売の足あと。</h2>
+        </div>
+        <p class="section-aside">終わったものから、<br>シールが貼られていく。</p>
+      </div>
+
+      <div class="roadmap-shell">
+        <div class="road-line" aria-hidden="true"></div>
+        <div class="milestones" id="milestones"></div>
+      </div>
+    </section>
+
+    <section class="history-section wrap">
+      <div class="section-heading compact">
+        <div>
+          <p class="section-kicker">BUSINESS DIARY</p>
+          <h2>できた日の記録。</h2>
+        </div>
+        <div class="sticker-count"><b id="stickerCount">0</b><span>STICKERS</span></div>
+      </div>
+
+      <div class="history-grid">
+        <div class="history-list" id="historyList">
+          <div class="history-empty">
+            <span>✦</span>
+            <p>最初の「できた！」が<br>ここに残るよ。</p>
+          </div>
+        </div>
+        <aside class="next-chapter">
+          <span class="tape"></span>
+          <p class="mini-label">COMING NEXT</p>
+          <h3>開業後も、<br>ちゃんと続く。</h3>
+          <div class="future-list">
+            <span>初めてのリピーター</span>
+            <span>月商10万円</span>
+            <span>初めて単価を上げた</span>
+            <span>初確定申告</span>
+            <span>年商100万円</span>
+          </div>
+          <p class="future-note">チェックリストではなく、<br>あなたの商売の年表へ。</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <p>ひとり商店。 <span>prototype 01</span></p>
+    <p>あなたの仕事は、あなたのペースで育つ。</p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <div class="toast-star">✦</div>
+    <div><span>ACHIEVEMENT</span><strong id="toastTitle">できた！</strong><p id="toastText">部屋に新しいものが増えました。</p></div>
+  </div>
+
+  <dialog class="settings-dialog" id="settingsDialog">
+    <form method="dialog" class="settings-card" id="settingsForm">
+      <div class="dialog-head"><div><span class="mini-label">YOUR SHOP</span><h2>商店の設定</h2></div><button class="icon-button" value="cancel" aria-label="閉じる" type="submit">×</button></div>
+      <label>屋号<input id="shopNameInput" maxlength="18" autocomplete="off" value="かな商店"></label>
+      <label>開業日<input id="startDateInput" type="date"></label>
+      <div class="dialog-actions">
+        <button class="secondary-button danger" id="resetProgress" type="button">進行をリセット</button>
+        <button class="complete-button small" value="save" type="submit">保存する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
