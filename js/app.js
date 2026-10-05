@@ -1,0 +1,371 @@
+// Screen: rendering, sheets and event handlers. Data changes go through state.js,
+// saving goes through store.js. This file never talks to localStorage or Supabase directly.
+import { EVENTS, CHAPTERS, BYK, sampleState } from './events.js';
+import {
+  DATE_RE, MONTH_RE, todayStr, fmtDate, fmtMonth, dayLabel, headerDays,
+  deadlineOf, dueText, dueClass, pendingEvents, curChapter, totals, parseYen,
+} from './logic.js';
+import * as st from './state.js';
+import { createLocalStore, createRemoteStore } from './store.js';
+import { createAuth } from './auth.js';
+import { SUPABASE_URL, SUPABASE_KEY, LOCAL_KEY } from './config.js';
+
+// ---------- small helpers ----------
+const $ = id => document.getElementById(id);
+const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function bindTap(nodes, fn) {
+  nodes.forEach(el => {
+    el.onclick = () => fn(el);
+    el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fn(el); } };
+  });
+}
+function showErr(id, msg) { const el = $(id); el.textContent = msg; el.hidden = false; }
+function safeStorage() {
+  try { const s = window.localStorage; s.getItem('_'); return s; }
+  catch { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: k => m.delete(k) }; }
+}
+
+// ---------- app state ----------
+const local = createLocalStore(safeStorage(), LOCAL_KEY);
+let S = local.load() || sampleState();
+let store = local;
+let auth = null, user = null;
+const fresh = new Set();          // records to flash once in the history
+const cheerQueue = [];            // celebrations waiting for the current sheet to close
+
+// Saves the ops for a change that has already been applied to S, plus any automatic milestones.
+async function commit(ops) {
+  const auto = st.syncAuto(S, todayStr());
+  auto.added.forEach(k => fresh.add(k));
+  render();
+  if (auto.added.length) queueCheer(auto.added);
+  try { await store.apply(S, [...ops, ...auto.ops]); }
+  catch (e) {
+    if (store.kind === 'remote') {
+      toast('保存できませんでした。通信を確認して、もう一度試してね。');
+      await reloadRemote();
+    } else toast(e.message);
+  }
+}
+function leaveSampleIfNeeded() { if (S.sample) S = st.emptyState(); }
+
+// ---------- rendering ----------
+function shopName() { return S.name || 'わたしの商店'; }
+
+function render() {
+  const today = todayStr();
+  $('shopname').textContent = shopName();
+  $('signText').textContent = shopName().slice(0, 8);
+  $('days').innerHTML = headerDays(S, today);
+  const c = curChapter(S);
+  $('chapter').textContent = '第' + (c + 1) + '章 ' + CHAPTERS[c];
+  $('sampleBar').hidden = !S.sample;
+  const t = totals(S); $('sSales').textContent = yen(t.s); $('sExp').textContent = yen(t.e); $('sProfit').textContent = yen(t.p);
+  // data-k: shown when that event is done; data-any: shown when any of the listed events is done.
+  document.querySelectorAll('.it').forEach(g => g.classList.toggle('on', (g.dataset.any || g.dataset.k).split(' ').some(k => S.done[k])));
+  const cnt = Object.keys(S.done).length;
+  $('roomhint').textContent = cnt ? '部屋のもの ' + cnt + ' / ' + EVENTS.length : 'まだ何もない部屋。出来事を記録すると物が増えます';
+
+  const next = pendingEvents(S).slice(0, 3);
+  $('events').innerHTML = next.length ? next.map(e => evCard(e, today)).join('') : '<p class="empty">用意した出来事はすべて記録しました。</p>';
+  $('events').querySelectorAll('.ev').forEach(b => { b.onclick = () => openEvent(b.dataset.k); });
+
+  const ms = Object.keys(S.months).sort().reverse();
+  $('mlist').innerHTML = ms.map(m => `<div class="mrow" role="button" tabindex="0" data-m="${esc(m)}" aria-label="${esc(fmtMonth(m))}のお金を直す"><span class="num">${esc(fmtMonth(m))}</span><span class="num">売上 ${yen(S.months[m].s)} / 経費 ${yen(S.months[m].e)}</span></div>`).join('');
+  bindTap($('mlist').querySelectorAll('.mrow'), el => openMonth(el.dataset.m));
+
+  const hs = Object.entries(S.done).filter(([k]) => BYK[k]).sort((a, b) => a[1].date < b[1].date ? -1 : a[1].date > b[1].date ? 1 : 0);
+  $('history').innerHTML = hs.length ? hs.map(([k, v]) => historyRow(k, v)).join('') : '<p class="empty">最初の出来事を記録すると、ここに年表ができていきます。</p>';
+  bindTap($('history').querySelectorAll('.h'), el => openEdit(el.dataset.k));
+  fresh.clear();
+  renderAccount();
+}
+
+function evCard(e, today) {
+  const dl = deadlineOf(S, e.k, today);
+  const due = dl ? `<span class="${dueClass(dl)}">${esc(dueText(dl))}</span>` : '';
+  return `<button class="ev" data-k="${e.k}"><span class="ic" aria-hidden="true">${e.ic}</span><span><span class="t">${esc(e.rec)}</span><span class="s">${esc(e.t)}　·　第${e.ch + 1}章 ${CHAPTERS[e.ch]}</span>${due}</span><span class="go" aria-hidden="true">›</span></button>`;
+}
+function historyRow(k, v) {
+  const e = BYK[k];
+  return `<div class="h${fresh.has(k) ? ' fresh' : ''}" role="button" tabindex="0" data-k="${k}" aria-label="「${esc(e.done)}」の記録を直す"><div class="d">${fmtDate(v.date)}<em>${dayLabel(S, v.date)}</em></div><div class="ti">${esc(e.done)}${v.amount != null ? `<span class="amt">${yen(v.amount)}</span>` : ''}</div>${v.memo ? `<div class="memo">${esc(v.memo)}</div>` : ''}</div>`;
+}
+
+function renderAccount() {
+  const el = $('account');
+  if (!auth) { el.innerHTML = '<p>記録はこの端末だけに保存しています。<br>ログイン機能を読み込めなかったので、通信を確認してページを開き直してね。</p>'; return; }
+  if (!user) {
+    el.innerHTML = '<p>記録はこの端末だけに保存しています。ログインすると、スマホとPCで同じ記録を使えます。</p><button class="btn ghost" id="loginBtn">ログイン</button>';
+    $('loginBtn').onclick = () => openLogin();
+    return;
+  }
+  el.innerHTML = `<p><b>${esc(user.email)}</b> でログイン中。記録はクラウドに保存しています。</p><button class="btn ghost" id="logoutBtn">ログアウト</button>`;
+  $('logoutBtn').onclick = async () => {
+    try { await auth.signOut(); } catch { toast('ログアウトできませんでした。もう一度試してね。'); return; }
+    enterLocal();
+  };
+}
+
+// ---------- sheets ----------
+function sheet(html) {
+  $('layer').innerHTML = `<div class="veil" id="veil"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('veil').onclick = e => { if (e.target.id === 'veil') close(); };
+}
+function close() { $('layer').innerHTML = ''; showNextCheer(); }
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => { t.hidden = true; }, 5000);
+}
+
+// Record form, shared by "できた！" and edit.
+function recordFields(k, rec) {
+  const e = BYK[k];
+  return `${k === 'yago' ? `<div class="field"><label for="fName">屋号</label><input id="fName" required maxlength="20" value="${esc(S.name)}" placeholder="例：かな商店"></div>` : ''}
+    <div class="field"><label for="fDate">${k === 'opendate' ? '開業日' : '記録する日'}</label><input type="date" id="fDate" required value="${esc(rec.date || '')}"></div>
+    ${e.amount ? `<div class="field"><label for="fAmt">金額（円・任意）</label><input type="number" id="fAmt" min="0" step="1" inputmode="numeric" value="${rec.amount != null ? rec.amount : ''}"></div>` : ''}
+    <div class="field"><label for="fMemo">ひとことメモ（任意）</label><input id="fMemo" maxlength="80" placeholder="今日のこと、ひとこと" value="${esc(rec.memo || '')}"></div>
+    <p class="err" id="fErr" hidden></p>`;
+}
+function readRecordForm(k) {
+  const date = $('fDate').value;
+  if (!DATE_RE.test(date)) return { err: '日付を入れてください。' };
+  const rec = { date };
+  if ($('fAmt')) {
+    const a = parseYen($('fAmt').value, { optional: true });
+    if (Number.isNaN(a)) return { err: '金額は0以上の整数で入れてください。' };
+    if (a != null) rec.amount = a;
+  }
+  const m = $('fMemo').value.trim(); if (m) rec.memo = m.slice(0, 80);
+  const extra = {};
+  if (k === 'yago') { const nm = $('fName').value.trim(); if (!nm) return { err: '屋号を入れてください。' }; extra.name = nm.slice(0, 20); }
+  return { rec, extra };
+}
+
+function openEvent(k, step = 0) {
+  const e = BYK[k];
+  const steps = ['なぜ必要？', 'どうやる？', 'できた！'].map((s, i) => `<span class="${i === step ? 'cur' : i < step ? 'done' : ''}">${s}</span>`).join('');
+  const dl = deadlineOf(S, k, todayStr());
+  const dueBox = dl ? `<div class="duebox"><span class="${dueClass(dl)}">${esc(dueText(dl))}</span><small>${esc(dl.note)}。日付は目安なので、正確な期限は窓口の案内で確認してね。</small></div>` : '';
+  const optNote = e.opt ? `<p class="warn">${esc(e.opt)}の出来事です。</p>` : '';
+  const skipBtn = e.opt ? '<button class="btn ghost left" id="skip">自分には関係ない</button>' : '';
+  let body = '';
+  if (step === 0) body = `<p>${esc(e.why)}</p>${optNote}${dueBox}<div class="acts">${skipBtn}<button class="btn ghost" id="x">あとで</button><button class="btn" id="nx">どうやる？</button></div>`;
+  if (step === 1) body = `<ul>${e.how.map(h => `<li>${esc(h)}</li>`).join('')}</ul><div class="acts"><button class="btn ghost" id="bk">戻る</button><button class="btn" id="nx">できた！</button></div>`;
+  if (step === 2) body = `<form id="doneForm" novalidate class="sheetform">
+    ${recordFields(k, { date: k === 'opendate' && S.start ? S.start : todayStr() })}
+    <div class="acts"><button type="button" class="btn ghost" id="bk">戻る</button><button class="btn" type="submit">記録する</button></div></form>`;
+  sheet(`<div class="sheeticon" aria-hidden="true">${e.ic}</div><h3>${esc(e.t)}</h3><div class="steps">${steps}</div>${body}`);
+  $('x') && ($('x').onclick = close);
+  $('skip') && ($('skip').onclick = () => { leaveSampleIfNeeded(); const ops = st.skipEvent(S, k); close(); commit(ops); });
+  $('nx') && ($('nx').onclick = () => openEvent(k, step + 1));
+  $('bk') && ($('bk').onclick = () => openEvent(k, step - 1));
+  const f = $('doneForm');
+  if (f) f.onsubmit = ev => {
+    ev.preventDefault();
+    const r = readRecordForm(k); if (r.err) return showErr('fErr', r.err);
+    leaveSampleIfNeeded();
+    const ops = st.applyRecord(S, k, r.rec, r.extra);
+    fresh.add(k);
+    $('layer').innerHTML = '';
+    queueCheer([k]);
+    commit(ops);
+  };
+}
+
+function openEdit(k, confirmDel) {
+  const e = BYK[k], rec = S.done[k]; if (!e || !rec) return;
+  if (confirmDel) {
+    sheet(`<h3>「${esc(e.done)}」の記録を取り消しますか？</h3><p class="warn">年表と部屋から消えて、「${esc(e.t)}」は次の出来事に戻ります。</p>
+      <div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doDel">取り消す</button></div>`);
+    $('x').onclick = () => openEdit(k);
+    $('doDel').onclick = () => { const ops = st.removeRecord(S, k); close(); commit(ops); };
+    return;
+  }
+  sheet(`<div class="sheeticon" aria-hidden="true">${e.ic}</div><h3>${esc(e.done)}</h3>
+    <form id="editForm" novalidate class="sheetform">${recordFields(k, rec)}
+    ${e.auto ? '<p class="warn">売上から自動でついた記録です。日付とメモを直せます。</p>' : ''}
+    <div class="acts">${e.auto ? '' : '<button type="button" class="btn ghost left" id="toDel">取り消す</button>'}<button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit">保存</button></div></form>`);
+  $('x').onclick = close;
+  $('toDel') && ($('toDel').onclick = () => openEdit(k, true));
+  $('editForm').onsubmit = ev => {
+    ev.preventDefault();
+    const r = readRecordForm(k); if (r.err) return showErr('fErr', r.err);
+    const ops = st.applyRecord(S, k, r.rec, r.extra); close(); commit(ops);
+  };
+}
+
+function openMonth(m, confirmDel) {
+  const v = S.months[m]; if (!v) return;
+  if (confirmDel) {
+    sheet(`<h3>${esc(fmtMonth(m))} のお金を消しますか？</h3><p class="warn">この月の売上と経費が消え、累計も変わります。</p>
+      <div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doDel">消す</button></div>`);
+    $('x').onclick = () => openMonth(m);
+    $('doDel').onclick = () => { const ops = st.removeMonth(S, m); close(); commit(ops); };
+    return;
+  }
+  sheet(`<h3>${esc(fmtMonth(m))} のお金</h3>
+    <form id="mEdit" novalidate class="sheetform"><div class="row">
+      <div class="field"><label for="eSales">売上（円）</label><input type="number" id="eSales" min="0" step="1" inputmode="numeric" value="${v.s}"></div>
+      <div class="field"><label for="eExp">経費（円）</label><input type="number" id="eExp" min="0" step="1" inputmode="numeric" value="${v.e}"></div></div>
+      <p class="err" id="fErr" hidden></p>
+      <div class="acts"><button type="button" class="btn ghost left" id="toDel">この月を消す</button><button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit">保存</button></div></form>`);
+  $('x').onclick = close;
+  $('toDel').onclick = () => openMonth(m, true);
+  $('mEdit').onsubmit = ev => {
+    ev.preventDefault();
+    const s = parseYen($('eSales').value), x = parseYen($('eExp').value);
+    if (Number.isNaN(s) || Number.isNaN(x)) return showErr('fErr', '金額は0以上の整数で入れてください。');
+    const ops = st.setMonth(S, m, { s, e: x }); close(); commit(ops);
+  };
+}
+
+function openNow() {
+  const c = curChapter(S); const list = EVENTS.filter(e => e.ch === c);
+  const next = pendingEvents(S)[0];
+  const mark = e => S.done[e.k] ? ['ok', '✓'] : S.skip[e.k] ? ['no', '対象外'] : e.auto ? ['no', '自動'] : ['no', '未'];
+  sheet(`<h3>今の${esc(shopName())}</h3><div class="steps"><span class="cur">第${c + 1}章 ${CHAPTERS[c]}</span></div>
+   <div class="check">${list.map(e => { const [cls, t] = mark(e); return `<div><span>${esc(e.t)}</span><span class="${cls}">${t}</span></div>`; }).join('')}</div>
+   ${next ? `<div class="reco">次は「<b>${esc(next.rec)}</b>」のがおすすめ。</div><div class="acts"><button class="btn ghost" id="x">閉じる</button><button class="btn" id="go">${esc(next.ic)} はじめる</button></div>` : '<p>用意した出来事はすべて記録しました。</p><div class="acts"><button class="btn" id="x">閉じる</button></div>'}`);
+  $('x').onclick = close; $('go') && ($('go').onclick = () => openEvent(next.k));
+}
+
+function skippedList() {
+  const ks = Object.keys(S.skip).filter(k => BYK[k]);
+  if (!ks.length) return '';
+  return `<div class="field"><label>関係ないにした出来事</label><div class="check">${ks.map(k => `<div><span>${esc(BYK[k].t)}</span><button type="button" class="linkbtn" data-unskip="${k}">戻す</button></div>`).join('')}</div></div>`;
+}
+function openSettings(confirmReset) {
+  if (confirmReset) {
+    const warn = S.sample ? 'いま表示している見本の記録と数字はすべて消えます。' : (user ? 'クラウドに保存した記録と数字がすべて消えます。元には戻せません。' : 'この端末の記録と数字がすべて消えます。元には戻せません。');
+    sheet(`<h3>まっさらから始めますか？</h3><p class="warn">${warn}</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`);
+    $('x').onclick = close;
+    $('doReset').onclick = () => { const ops = st.resetAll(S); close(); commit(ops); };
+    return;
+  }
+  sheet(`<h3>お店の設定</h3><form id="setForm" novalidate class="sheetform">
+   <div class="field"><label for="sName">屋号</label><input id="sName" maxlength="20" value="${esc(S.name)}" placeholder="例：かな商店"></div>
+   <div class="field"><label for="sStart">開業日</label><input type="date" id="sStart" value="${esc(S.start)}"></div>
+   ${skippedList()}
+   <p class="err" id="fErr" hidden></p>
+   <div class="acts"><button type="button" class="btn ghost left" id="toReset">すべての記録を消す</button><button class="btn" type="submit">保存</button></div></form>`);
+  $('toReset').onclick = () => openSettings(true);
+  document.querySelectorAll('[data-unskip]').forEach(b => { b.onclick = () => { const ops = st.unskipEvent(S, b.dataset.unskip); commit(ops); openSettings(false); }; });
+  $('setForm').onsubmit = ev => {
+    ev.preventDefault();
+    const name = $('sName').value.trim().slice(0, 20), start = $('sStart').value;
+    if (start && !DATE_RE.test(start)) return showErr('fErr', '開業日を正しく入れてください。');
+    leaveSampleIfNeeded();
+    const ops = st.setShop(S, name, start); close(); commit(ops);
+  };
+}
+
+// ---------- celebrations ----------
+function queueCheer(keys) { cheerQueue.push(...keys); if (!$('layer').innerHTML) showNextCheer(); }
+function showNextCheer() {
+  const k = cheerQueue.shift(); if (!k) return;
+  const e = BYK[k], v = S.done[k]; if (!e || !v) return showNextCheer();
+  const label = dayLabel(S, v.date);
+  const colors = ['--accent', '--sticker', '--pink', '--leaf'];
+  const conf = Array.from({ length: 28 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:var(${colors[i % 4]});animation-delay:${Math.random() * 0.4}s"></i>`).join('');
+  $('layer').innerHTML = `<div class="confetti">${conf}</div><div class="cele" id="cele"><div class="card" role="dialog" aria-modal="true">
+    <div class="stamp"><span class="e" aria-hidden="true">${e.ic}</span><span class="n">${fmtDate(v.date)}</span></div>
+    <h4>${esc(e.done)}</h4><p>${esc(e.msg)}</p>
+    ${label ? `<p class="num cele-day">${label}の出来事</p>` : ''}
+    <button class="btn" id="ok">年表に残す</button></div></div>`;
+  $('ok').focus();
+  $('ok').onclick = close;
+}
+
+// ---------- login ----------
+function openLogin(sent) {
+  if (sent) {
+    sheet(`<h3>メールを送りました</h3><p>届いたメールのリンクを、この端末で開いてね。開くとログインできます。</p><div class="acts"><button class="btn" id="x">閉じる</button></div>`);
+    $('x').onclick = close; return;
+  }
+  sheet(`<h3>ログイン</h3><p class="warn">メールアドレスにログイン用のリンクを送ります。パスワードはいりません。</p>
+    <form id="loginForm" novalidate class="sheetform"><div class="field"><label for="lEmail">メールアドレス</label><input type="email" id="lEmail" autocomplete="email" required></div>
+    <p class="err" id="fErr" hidden></p>
+    <div class="acts"><button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit" id="sendBtn">リンクを送る</button></div></form>`);
+  $('x').onclick = close;
+  $('loginForm').onsubmit = async ev => {
+    ev.preventDefault();
+    const email = $('lEmail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('fErr', 'メールアドレスを正しく入れてください。');
+    $('sendBtn').disabled = true;
+    try { await auth.sendLink(email, location.origin + location.pathname); openLogin(true); }
+    catch { $('sendBtn').disabled = false; showErr('fErr', '送れませんでした。少し時間をおいて、もう一度試してね。'); }
+  };
+}
+
+// Moving this device's records to a new account (only when the account is still empty).
+function offerImport(localState) {
+  sheet(`<h3>この端末の記録を移しますか？</h3><p>この端末に保存している記録を、ログインしたアカウントに移します。移すと、スマホとPCで同じ記録を使えます。</p>
+    <div class="acts"><button class="btn ghost" id="x">移さない</button><button class="btn" id="doImport">移す</button></div>`);
+  $('x').onclick = close;
+  $('doImport').onclick = async () => {
+    $('doImport').disabled = true;
+    S = localState;
+    try { await store.apply(S, st.allOps(S)); close(); render(); toast('この端末の記録を移しました。'); }
+    catch { close(); toast('移せませんでした。通信を確認して、もう一度ログインし直してね。'); await reloadRemote(); }
+  };
+}
+
+// ---------- modes ----------
+function enterLocal() {
+  user = null; store = local;
+  S = local.load() || sampleState();
+  render();
+}
+async function enterRemote(u) {
+  user = u; store = createRemoteStore(auth.client, u.id);
+  $('days').textContent = '記録を読み込んでいます…';
+  const ok = await reloadRemote();
+  if (!ok) return;
+  const localState = local.load();
+  if (!st.hasUserData(S) && localState && st.hasUserData(localState)) offerImport(localState);
+}
+async function reloadRemote() {
+  try { S = await store.load(); render(); return true; }
+  catch {
+    S = st.emptyState(); render();
+    toast('記録を読み込めませんでした。通信を確認して、ページを開き直してね。');
+    return false;
+  }
+}
+
+// ---------- start ----------
+$('monthForm').onsubmit = ev => {
+  ev.preventDefault();
+  const m = $('mMonth').value;
+  const s = parseYen($('mSales').value), x = parseYen($('mExp').value);
+  if (!MONTH_RE.test(m)) return showErr('mErr', '月を選んでください。');
+  if (Number.isNaN(s) || Number.isNaN(x)) return showErr('mErr', '金額は0以上の整数で入れてください。');
+  $('mErr').hidden = true;
+  leaveSampleIfNeeded();
+  const ops = st.setMonth(S, m, { s, e: x });
+  $('mSales').value = ''; $('mExp').value = '';
+  commit(ops);
+};
+$('mMonth').value = todayStr().slice(0, 7);
+$('nowBtn').onclick = openNow;
+$('shopname').onclick = () => openSettings(false);
+$('resetBtn').onclick = () => openSettings(true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('cele')) close(); });
+
+async function start() {
+  render();
+  auth = createAuth(window.supabase, SUPABASE_URL, SUPABASE_KEY);
+  if (!auth) { render(); return; }
+  let session = null;
+  try { session = await auth.session(); } catch { /* treated as logged out */ }
+  auth.onChange((event, s) => {
+    if (event === 'SIGNED_IN' && s && (!user || user.id !== s.user.id)) enterRemote(s.user);
+    if (event === 'SIGNED_OUT' && user) enterLocal();
+  });
+  if (session) await enterRemote(session.user); else render();
+}
+start();
+
+// Exposed for tests only.
+window.__app = { get S() { return S; }, get store() { return store; }, get user() { return user; } };
