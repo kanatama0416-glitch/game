@@ -284,6 +284,37 @@ input[type=number],input[type=month],input[type=date]{font-family:var(--mono)}
         <line x1="230" y1="180" x2="230" y2="196" style="stroke:var(--pink)" stroke-width="2"/>
         <line x1="236" y1="180" x2="236" y2="196" style="stroke:var(--leaf)" stroke-width="2"/>
       </g>
+      <!-- envelope on the box: 源泉徴収票 -->
+      <g class="it" data-k="gensen">
+        <rect x="181" y="163" width="22" height="9" style="fill:var(--paper);stroke:var(--ink)" stroke-width="1.6"/>
+        <polyline points="181,163 192,169 203,163" fill="none" style="stroke:var(--ink)" stroke-width="1.4"/>
+      </g>
+      <!-- clipboard: 取引条件 -->
+      <g class="it" data-k="joken">
+        <rect x="252" y="114" width="20" height="26" rx="2" style="fill:var(--wood);stroke:var(--ink)" stroke-width="2"/>
+        <rect x="255" y="119" width="14" height="18" style="fill:var(--paper)"/>
+        <rect x="257" y="111" width="10" height="5" rx="1" style="fill:var(--ink)"/>
+      </g>
+      <!-- 2年目へ: calculator / tax notice / coins / piggy bank on the floor -->
+      <g class="it" data-k="shohizei">
+        <rect x="238" y="208" width="18" height="24" rx="2" style="fill:var(--ink)"/>
+        <rect x="241" y="211" width="12" height="6" style="fill:var(--leaf)"/>
+      </g>
+      <g class="it" data-k="jigyozei">
+        <rect x="264" y="212" width="20" height="24" style="fill:var(--paper);stroke:var(--ink)" stroke-width="1.8"/>
+        <text x="274" y="228" text-anchor="middle" style="fill:var(--ink);font-family:var(--display);font-weight:900;font-size:10px">事</text>
+      </g>
+      <g class="it" data-k="yotei">
+        <ellipse cx="304" cy="232" rx="9" ry="3.5" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.4"/>
+        <ellipse cx="304" cy="227" rx="9" ry="3.5" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.4"/>
+        <ellipse cx="304" cy="222" rx="9" ry="3.5" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.4"/>
+      </g>
+      <g class="it" data-k="ideco">
+        <ellipse cx="335" cy="225" rx="13" ry="10" style="fill:var(--pink);stroke:var(--ink)" stroke-width="2"/>
+        <path d="M328 217l2-5 4 4z" style="fill:var(--pink);stroke:var(--ink)" stroke-width="1.5"/>
+        <rect x="331" y="216" width="8" height="2" style="fill:var(--ink)"/>
+        <circle cx="344" cy="224" r="2.5" style="fill:var(--paper);stroke:var(--ink)" stroke-width="1"/>
+      </g>
       <!-- box: 退職 -->
       <g class="it" data-k="taishoku">
         <rect x="172" y="172" width="42" height="28" rx="2" style="fill:var(--floor2);stroke:var(--ink)" stroke-width="2.5"/>
@@ -346,6 +377,12 @@ const EVENTS=[
  {k:'koyo',ch:0,ic:'📄',t:'失業保険をどうするか決めた',done:'失業保険の方針が決まりました',msg:'ボードにメモがもう1枚。',rec:'失業保険のことを確かめる',
   why:'離職後に事業を始めた人向けに、事業をしている期間を最大3年まで失業保険の受給期間に数えない特例があります。',
   how:['離職票を受け取ったら、ハローワークで自分の場合を相談する','開業する時期とあわせて、特例を申請するか決める']},
+ {k:'gensen',ch:0,ic:'✉️',t:'源泉徴収票を受け取った',done:'源泉徴収票を受け取りました',msg:'段ボールの上に封筒がひとつ。',rec:'退職した会社の源泉徴収票をもらう',
+  why:'年の途中で退職して年末調整を受けていないと、納めすぎた税金を確定申告で取り戻せることがあります。そのときに会社の源泉徴収票を使います。',
+  how:['退職した会社から届いたら、確定申告まで大事に保管する','届かないときは会社に問い合わせる']},
+ {k:'ideco',ch:0,ic:'🐷',t:'iDeCoの種別を変更した',done:'iDeCoの切り替えが済みました',msg:'棚の上に小さな貯金箱。',rec:'iDeCoの切り替えをする',opt:'iDeCoに入っている人だけ',
+  why:'iDeCoに入っているなら、会社員から自営業に変わったことを届け出ると、そのまま続けられます。',
+  how:['「加入者被保険者種別変更届（第1号被保険者用）」を、iDeCoを申し込んだ金融機関に出す']},
  {k:'yago',ch:0,ic:'🪧',t:'屋号を決めた',done:'屋号が決まりました',msg:'お店に看板がかかりました。',rec:'お店の名前を決める',
   why:'屋号は請求書や口座名義、名刺に使う「お店の名前」。先に決めておくと、このあとの手続きがスムーズになります。',
   how:['呼びやすく、検索して他と被りにくい名前を3つ書き出す','声に出して名乗ってみて、しっくりくるものを選ぶ','ドメインやSNSのアカウント名が空いているかも見ておく']},
@@ -388,6 +425,9 @@ const EVENTS=[
  {k:'hozon',ch:2,ic:'🗂️',t:'書類の保存方法を決めた',done:'書類の置き場所が決まりました',msg:'机の下にファイルボックスが置かれました。',rec:'請求書や領収書の保存方法を決める',
   why:'見積書・請求書・領収書は保存が必要です。メールやPDFで受け取ったデータには、保存方法のルールがあります。',
   how:['紙はファイルに、データは決めたフォルダにまとめる','データの保存方法は国税庁の電子帳簿保存法の案内で確認する']},
+ {k:'joken',ch:2,ic:'📋',t:'取引条件を書面でもらった',done:'取引条件を書面でもらいました',msg:'壁にクリップボードが掛かりました。',rec:'仕事の条件を文字で残す',
+  why:'フリーランス新法（2024年11月施行）で、発注する事業者は業務内容・報酬・支払期日などをすぐに書面やメールで示す義務があります。支払期日は納品から60日以内です。',
+  how:['メールやチャットでもいいので、条件を文字で残してもらう','もらえないときは、こちらから条件をまとめて送って確認する']},
  {k:'repeat',ch:3,ic:'🤝',t:'リピーターができた',done:'リピーターができました',msg:'壁に小さな額が飾られました。',rec:'もう一度頼んでくれた人を大事にする',
   why:'2回目の依頼は、仕事が信頼された証拠。事業が「回り始めた」いちばんの合図です。',how:['どこが良かったか聞いてみる','次の提案ができないか考える']},
  {k:'decline',ch:3,ic:'✋',t:'初めて仕事を断った',done:'初めて仕事を断りました',msg:'自分の事業の形を、自分で選びました。',rec:'受ける仕事を選ぶ',
@@ -399,27 +439,37 @@ const EVENTS=[
   how:['会計ソフトで1年分の記録を整える','申告期間は翌年2月16日〜3月15日','e-Taxか税務署で提出する']},
  {k:'raise',ch:4,ic:'🏆',t:'単価を上げた',done:'はじめて単価を上げた日',msg:'棚に小さなトロフィーが置かれました。',rec:'自分の仕事の値段を見直す',
   why:'経験が積み重なったら、値段に反映していい。続けるための大事な一歩です。',how:['今の仕事にかかっている時間を数える','新しい依頼から新しい金額を出す'],amount:true},
+ {k:'shohizei',ch:5,ic:'🧮',t:'消費税の対象か確かめた',done:'消費税の確認が済みました',msg:'床に電卓が置かれました。',rec:'消費税の課税事業者になるか確かめる',
+  why:'前々年の売上が1,000万円を超えると、消費税の課税事業者になります。前年1〜6月の売上で判定されることもあります。インボイス登録している場合は売上に関係なく申告が必要です。',
+  how:['年ごとの売上を確認する','前年の1〜6月の売上も見ておく','対象になりそうなら税務署の案内で手続きを確認する']},
+ {k:'yotei',ch:5,ic:'🪙',t:'予定納税を払った',done:'初めての予定納税',msg:'床に小銭が積み上がりました。',rec:'予定納税を払う',opt:'通知が来た人だけ',
+  why:'前年分の所得から計算した額が15万円以上だと、その年の所得税の一部を前払いします。税務署から通知が届きます。',
+  how:['第1期は7月、第2期は11月に払う','払った額は次の確定申告で差し引くので、記録しておく'],amount:true},
+ {k:'jigyozei',ch:5,ic:'📨',t:'個人事業税を払った',done:'初めての個人事業税',msg:'床に「事」の書類が置かれました。',rec:'個人事業税を払う',opt:'通知が来た人だけ',
+  why:'法定の業種にあてはまり、所得が年290万円の控除を超えると、県から個人事業税の通知が届きます。確定申告を出していれば、別の申告はいりません。',
+  how:['石川県は8月と11月の2回に分けて払う（年1万円以下なら8月に全額）','自分の業種が対象かは県税事務所に確認する'],amount:true},
  // automatic
  {k:'sales10',ch:3,ic:'📚',t:'累計売上10万円',done:'売上10万円突破',msg:'壁に棚がつきました。',auto:true},
  {k:'black3',ch:3,ic:'📈',t:'3ヶ月連続黒字',done:'3ヶ月連続黒字',msg:'商売が回り始めました。',auto:true},
  {k:'y100',ch:4,ic:'🧶',t:'累計売上100万円',done:'売上100万円突破',msg:'床にラグが敷かれました。',auto:true},
  {k:'y300',ch:4,ic:'⭐',t:'累計売上300万円',done:'売上300万円突破',msg:'ここまで続けてきた証です。',auto:true},
 ];
-const CHAPTERS=['準備期','開業期','最初の仕事','商売が回り始める','安定期'];
+const CHAPTERS=['準備期','開業期','最初の仕事','商売が回り始める','安定期','2年目へ'];
 const BYK=Object.fromEntries(EVENTS.map(e=>[e.k,e]));
 const KEY='hitori-shoten-v1';
 
 function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function sample(){return{sample:true,name:'かな商店',start:'2026-09-02',
   done:{taishoku:{date:'2026-08-15',memo:'最後の日、チームのみんなに花束をもらった。'},nenkin:{date:'2026-08-19'},kenpo:{date:'2026-08-19',memo:'保険料を比べて国保にした。'},
-        koyo:{date:'2026-08-25'},kenzei:{date:'2026-09-10'},yago:{date:'2026-08-20',memo:'いろいろ悩んで、結局いちばん素直な名前に。'},opendate:{date:'2026-08-22'},software:{date:'2026-08-28'},
+        koyo:{date:'2026-08-25'},gensen:{date:'2026-09-12'},joken:{date:'2026-09-08',memo:'メールで条件をまとめてもらった。'},kenzei:{date:'2026-09-10'},yago:{date:'2026-08-20',memo:'いろいろ悩んで、結局いちばん素直な名前に。'},opendate:{date:'2026-08-22'},software:{date:'2026-08-28'},
         kaigyo:{date:'2026-09-02',memo:'税務署まで歩いて出しにいった。'},aoiro:{date:'2026-09-02'},expense:{date:'2026-09-10',amount:3200},
         invoice:{date:'2026-09-20',amount:50000,memo:'研修資料づくりの仕事。'},payment:{date:'2026-09-30',amount:50000},sales10:{date:'2026-10-04'}},
   months:{'2026-09':{s:80000,e:21000},'2026-10':{s:48400,e:11100}}}}
-function blank(){return{sample:false,name:'',start:'',done:{},months:{}}}
+function blank(){return{sample:false,name:'',start:'',done:{},months:{},skip:{}}}
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 if(!S||typeof S!=='object')S=sample();
+if(!S.skip||typeof S.skip!=='object')S.skip={}; // data saved before "skip" existed
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 const $=id=>document.getElementById(id);
@@ -442,7 +492,7 @@ function addDays(d,n){const x=new Date(d+'T00:00');x.setDate(x.getDate()+n);retu
 function addMonths(d,n){const x=new Date(d+'T00:00'),day=x.getDate();x.setMonth(x.getMonth()+n);if(x.getDate()<day)x.setDate(0);return ymd(x)}
 const DEADLINES={
   nenkin:{base:'quit',calc:q=>addDays(q,14),note:'退職日の翌日から14日以内'},
-  kenpo:{base:'quit',calc:q=>addDays(q,20),note:'任意継続にする場合、資格喪失日（退職日の翌日）から20日以内'},
+  kenpo:{base:'quit',calc:q=>addDays(q,14),note:'国民健康保険は14日以内（任意継続にする場合は資格喪失日から20日以内）'},
   kenzei:{base:'start',calc:s=>addMonths(s,1),note:'石川県は開業後1か月以内'},
   aoiro:{base:'start',calc:s=>s.slice(5)>='01-16'?addMonths(s,2):s.slice(0,4)+'-03-15',note:'1月16日以後の開業は開業日から2か月以内（それより前は3月15日まで）'},
   kaigyo:{base:'start',calc:s=>(Number(s.slice(0,4))+1)+'-03-15',note:'開業した年の確定申告期限まで'},
@@ -464,7 +514,9 @@ function dueText(dl){
 function dueClass(dl){return dl&&!dl.need&&dl.left<=7?'due urgent':'due'}
 function fmtDate(d){return d.replace(/-/g,'.')}
 function totals(){let s=0,e=0;for(const m of Object.values(S.months)){s+=m.s||0;e+=m.e||0}return{s,e,p:s-e}}
-function curChapter(){for(let c=0;c<CHAPTERS.length;c++){const ev=EVENTS.filter(e=>e.ch===c&&!e.auto);if(ev.some(e=>!S.done[e.k]))return c}return CHAPTERS.length-1}
+// Manual events still to do: not done, not marked "関係ない". Sorted by chapter, then list order.
+function pendingEvents(){return EVENTS.filter(e=>!e.auto&&!S.done[e.k]&&!S.skip[e.k]).sort((a,b)=>a.ch-b.ch)}
+function curChapter(){const p=pendingEvents();return p.length?p[0].ch:CHAPTERS.length-1}
 function shopName(){return S.name||'わたしの商店'}
 
 // Header line under the shop name. Returns trusted markup built from numbers only.
@@ -490,7 +542,7 @@ function render(){
   const cnt=Object.keys(S.done).length;
   $('roomhint').textContent=cnt?'部屋のもの '+cnt+' / '+EVENTS.length:'まだ何もない部屋。出来事を記録すると物が増えます';
   // next events
-  const next=EVENTS.filter(e=>!e.auto&&!S.done[e.k]).sort((a,b)=>a.ch-b.ch).slice(0,3);
+  const next=pendingEvents().slice(0,3);
   $('events').innerHTML=next.length?next.map(evCard).join(''):'<p class="empty">用意した出来事はすべて記録しました。</p>';
   $('events').querySelectorAll('.ev').forEach(b=>b.onclick=()=>openEvent(b.dataset.k));
   // months
@@ -534,6 +586,8 @@ function removeRecord(k){
 }
 function setMonth(m,v){S.sample=false;S.months[m]=v}
 function removeMonth(m){S.sample=false;delete S.months[m]}
+function skipEvent(k){S.sample=false;S.skip[k]=true}
+function unskipEvent(k){delete S.skip[k]}
 
 // --- validation (no DOM) ---
 const DATE_RE=/^\d{4}-\d{2}-\d{2}$/, MONTH_RE=/^\d{4}-\d{2}$/;
@@ -616,13 +670,16 @@ function openEvent(k,step=0){
   let body='';
   const dl=deadlineOf(k,todayStr());
   const dueBox=dl?`<div class="duebox"><span class="${dueClass(dl)}">${esc(dueText(dl))}</span><small>${esc(dl.note)}。日付は目安なので、正確な期限は窓口の案内で確認してね。</small></div>`:'';
-  if(step===0)body=`<p>${esc(e.why)}</p>${dueBox}<div class="acts"><button class="btn ghost" id="x">あとで</button><button class="btn" id="nx">どうやる？</button></div>`;
+  const optNote=e.opt?`<p class="warn">${esc(e.opt)}の出来事です。</p>`:'';
+  const skipBtn=e.opt?'<button class="btn ghost left" id="skip">自分には関係ない</button>':'';
+  if(step===0)body=`<p>${esc(e.why)}</p>${optNote}${dueBox}<div class="acts">${skipBtn}<button class="btn ghost" id="x">あとで</button><button class="btn" id="nx">どうやる？</button></div>`;
   if(step===1)body=`<ul>${e.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul><div class="acts"><button class="btn ghost" id="bk">戻る</button><button class="btn" id="nx">できた！</button></div>`;
   if(step===2)body=`<form id="doneForm" novalidate style="display:flex;flex-direction:column;gap:10px">
     ${recordFields(k,{date:k==='opendate'&&S.start?S.start:todayStr()})}
     <div class="acts"><button type="button" class="btn ghost" id="bk">戻る</button><button class="btn" type="submit">記録する</button></div></form>`;
   sheet(`<div style="font-size:1.8rem" aria-hidden="true">${e.ic}</div><h3>${esc(e.t)}</h3><div class="steps">${st}</div>${body}`);
   $('x')&&($('x').onclick=close);
+  $('skip')&&($('skip').onclick=()=>{skipEvent(k);save();close();render()});
   $('nx')&&($('nx').onclick=()=>openEvent(k,step+1));
   $('bk')&&($('bk').onclick=()=>openEvent(k,step-1));
   const f=$('doneForm');
@@ -682,22 +739,32 @@ $('mMonth').value=todayStr().slice(0,7);
 
 $('nowBtn').onclick=()=>{
   const c=curChapter();const list=EVENTS.filter(e=>e.ch===c);
-  const next=EVENTS.filter(e=>!e.auto&&!S.done[e.k]).sort((a,b)=>a.ch-b.ch)[0];
+  const next=pendingEvents()[0];
+  const mark=e=>S.done[e.k]?['ok','✓']:S.skip[e.k]?['no','対象外']:e.auto?['no','自動']:['no','未'];
   sheet(`<h3>今の${esc(shopName())}</h3><div class="steps"><span class="cur">第${c+1}章 ${CHAPTERS[c]}</span></div>
-   <div class="check">${list.map(e=>`<div><span>${esc(e.t)}</span><span class="${S.done[e.k]?'ok':'no'}">${S.done[e.k]?'✓':e.auto?'自動':'未'}</span></div>`).join('')}</div>
+   <div class="check">${list.map(e=>{const[c,t]=mark(e);return`<div><span>${esc(e.t)}</span><span class="${c}">${t}</span></div>`}).join('')}</div>
    ${next?`<div class="reco">次は「<b>${esc(next.rec)}</b>」のがおすすめ。</div><div class="acts"><button class="btn ghost" id="x">閉じる</button><button class="btn" id="go">${esc(next.ic)} はじめる</button></div>`:'<p>用意した出来事はすべて記録しました。</p><div class="acts"><button class="btn" id="x">閉じる</button></div>'}`);
   $('x').onclick=close;$('go')&&($('go').onclick=()=>openEvent(next.k));
 };
+
+// Events marked "自分には関係ない", each with a button to bring it back.
+function skippedList(){
+  const ks=Object.keys(S.skip).filter(k=>BYK[k]);
+  if(!ks.length)return'';
+  return `<div class="field"><label>関係ないにした出来事</label><div class="check">${ks.map(k=>`<div><span>${esc(BYK[k].t)}</span><button type="button" class="linkbtn" data-unskip="${k}">戻す</button></div>`).join('')}</div></div>`;
+}
 
 function openSettings(confirmReset){
   sheet(`<h3>${confirmReset?'まっさらから始めますか？':'お店の設定'}</h3>
    ${confirmReset?`<p class="warn">いま表示している見本の記録と数字はすべて消えます。</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`
    :`<form id="setForm" style="display:flex;flex-direction:column;gap:10px"><div class="field"><label for="sName">屋号</label><input id="sName" value="${esc(S.name)}" placeholder="例：かな商店"></div>
    <div class="field"><label for="sStart">開業日</label><input type="date" id="sStart" value="${esc(S.start)}"></div>
+   ${skippedList()}
    <div class="acts"><button type="button" class="btn ghost" id="toReset">すべての記録を消す</button><button class="btn" type="submit">保存</button></div></form>`}`);
   $('x')&&($('x').onclick=close);
   $('doReset')&&($('doReset').onclick=()=>{S=blank();save();close();render()});
   $('toReset')&&($('toReset').onclick=()=>openSettings(true));
+  document.querySelectorAll('[data-unskip]').forEach(b=>b.onclick=()=>{unskipEvent(b.dataset.unskip);save();render();openSettings(false)});
   const f=$('setForm');if(f)f.onsubmit=ev=>{ev.preventDefault();if(S.sample){const n=$('sName').value,st=$('sStart').value;S=blank();S.name=n.trim();S.start=st}else{S.name=$('sName').value.trim();S.start=$('sStart').value;if(S.done.opendate&&DATE_RE.test(S.start))S.done.opendate.date=S.start}save();close();render()};
 }
 $('shopname').onclick=()=>openSettings(false);
