@@ -1,4 +1,4 @@
-// Supabase project for ひとり商店。
+// Supabase project for にゃちまる商店 (project name: hitori-shoten).
 // The publishable key is meant to be in the browser; row level security protects the data.
 // Never put a secret / service_role key in this repository.
 export const SUPABASE_URL = 'https://jhkpaeuenvacxwecwasc.supabase.co';
