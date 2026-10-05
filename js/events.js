@@ -93,6 +93,17 @@ export const EVENTS=[
  {k:'y300',ch:4,ic:'⭐',t:'累計売上300万円',done:'売上300万円突破',msg:'ここまで続けてきた証です。',auto:true},
 ];
 export const CHAPTERS=['準備期','開業期','最初の仕事','商売が回り始める','安定期','2年目へ'];
+// Room name shown on the room in each chapter.
+export const ROOM_NAMES=['はじまりの部屋','開業したての部屋','仕事場','にぎわう店','落ち着いた店','2年目の店'];
+// What the room looks like in each chapter (shown when a chapter starts).
+export const CHAPTER_SCENES=[
+  '段ボールが積まれた、はじまりの部屋です。',
+  '壁紙を貼って、ランプを吊るしました。',
+  '窓の外に、町が見えるようになりました。',
+  'ガーランドを飾って、部屋があたたかくなりました。',
+  '腰壁をつけて、落ち着いたお店になりました。',
+  '階段ができて、2階へ続いています。',
+];
 export const BYK=Object.fromEntries(EVENTS.map(e=>[e.k,e]));
 
 // Example data shown before the first record (logged-out only).

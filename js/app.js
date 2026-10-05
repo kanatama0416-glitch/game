@@ -1,6 +1,6 @@
 // Screen: rendering, sheets and event handlers. Data changes go through state.js,
 // saving goes through store.js. This file never talks to localStorage or Supabase directly.
-import { EVENTS, CHAPTERS, BYK, sampleState } from './events.js';
+import { EVENTS, CHAPTERS, CHAPTER_SCENES, ROOM_NAMES, BYK, sampleState } from './events.js';
 import {
   DATE_RE, MONTH_RE, todayStr, fmtDate, fmtMonth, dayLabel, headerDays,
   deadlineOf, dueText, dueClass, pendingEvents, curChapter, totals, parseYen,
@@ -32,7 +32,8 @@ let S = local.load() || sampleState();
 let store = local;
 let auth = null, user = null;
 const fresh = new Set();          // records to flash once in the history
-const cheerQueue = [];            // celebrations waiting for the current sheet to close
+const cheerQueue = [];            // celebrations waiting for the current sheet to close: event key or {chapter}
+let lastChapter = null;           // chapter shown at the last render; null = don't celebrate the next change (fresh load)
 
 // Saves the ops for a change that has already been applied to S, plus any automatic milestones.
 async function commit(ops) {
@@ -67,8 +68,12 @@ function render() {
   $('sProfit').textContent = $('mProfitT').textContent = yen(t.p);
   // data-k: shown when that event is done; data-any: shown when any of the listed events is done.
   document.querySelectorAll('.it').forEach(g => g.classList.toggle('on', (g.dataset.any || g.dataset.k).split(' ').some(k => S.done[k])));
+  // Scene layers: shown while the current chapter is within data-from..data-to.
+  document.querySelectorAll('.scene').forEach(g => g.classList.toggle('on', c >= Number(g.dataset.from) && c <= Number(g.dataset.to)));
   const cnt = Object.keys(S.done).length;
-  $('roomhint').textContent = cnt ? '部屋のもの ' + cnt + ' / ' + EVENTS.length : 'まだ何もない部屋。出来事を記録すると物が増えます';
+  $('roomhint').textContent = ROOM_NAMES[c] + '・もの ' + cnt + ' / ' + EVENTS.length;
+  if (lastChapter !== null && c > lastChapter) queueCheer([{ chapter: c }]);
+  lastChapter = c;
 
   const next = pendingEvents(S).slice(0, 3);
   $('events').innerHTML = next.length ? next.map(e => evCard(e, today)).join('') : '<p class="empty">用意した出来事はすべて記録しました。</p>';
@@ -309,6 +314,7 @@ $('setForm').onsubmit = ev => {
 function queueCheer(keys) { cheerQueue.push(...keys); if (!$('layer').innerHTML) showNextCheer(); }
 function showNextCheer() {
   const k = cheerQueue.shift(); if (!k) return;
+  if (typeof k === 'object') return showChapterCheer(k.chapter);
   const e = BYK[k], v = S.done[k]; if (!e || !v) return showNextCheer();
   const label = dayLabel(S, v.date);
   const colors = ['--accent', '--sticker', '--pink', '--leaf'];
@@ -320,6 +326,15 @@ function showNextCheer() {
     <button class="btn" id="ok">年表に残す</button></div></div>`;
   $('ok').focus();
   $('ok').onclick = close;
+}
+
+function showChapterCheer(c) {
+  $('layer').innerHTML = `<div class="cele" id="cele"><div class="card" role="dialog" aria-modal="true">
+    <div class="stamp chapstamp"><span class="e">第${c + 1}章</span><span class="n">CHAPTER</span></div>
+    <h4>${esc(CHAPTERS[c])}へ</h4><p>部屋の模様替えをしました。${esc(CHAPTER_SCENES[c])}</p>
+    <button class="btn" id="ok">部屋を見る</button></div></div>`;
+  $('ok').focus();
+  $('ok').onclick = () => { close(); showTab('home'); };
 }
 
 // ---------- login ----------
@@ -350,7 +365,7 @@ function offerImport(localState) {
   $('x').onclick = close;
   $('doImport').onclick = async () => {
     $('doImport').disabled = true;
-    S = localState;
+    S = localState; lastChapter = null;
     try { await store.apply(S, st.allOps(S)); close(); render(); toast('この端末の記録を移しました。'); }
     catch { close(); toast('移せませんでした。通信を確認して、もう一度ログインし直してね。'); await reloadRemote(); }
   };
@@ -358,7 +373,7 @@ function offerImport(localState) {
 
 // ---------- modes ----------
 function enterLocal() {
-  user = null; store = local;
+  user = null; store = local; lastChapter = null;
   S = local.load() || sampleState();
   render();
 }
@@ -371,6 +386,7 @@ async function enterRemote(u) {
   if (!st.hasUserData(S) && localState && st.hasUserData(localState)) offerImport(localState);
 }
 async function reloadRemote() {
+  lastChapter = null;
   try { S = await store.load(); render(); return true; }
   catch {
     S = st.emptyState(); render();
@@ -423,4 +439,4 @@ async function start() {
 start();
 
 // Exposed for tests only.
-window.__app = { get S() { return S; }, get store() { return store; }, get user() { return user; } };
+window.__app = { get S() { return S; }, get store() { return store; }, get user() { return user; }, render };
