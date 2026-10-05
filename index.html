@@ -1,178 +1,710 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#fff7e8">
-  <title>ひとり商店。｜個人事業主になった！</title>
-  <meta name="description" content="個人事業主になるまでと、その後の成長を小さなゲームとして記録するアプリ。">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ひとり商店。</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column like a pocket diary — room diorama on top, next events as stickers, history as quiet stamped entries */
+:root{
+  --bg:#EEF2EA; --paper:#FFFFFF; --ink:#22302B; --muted:#66756D; --line:#D6DFD3;
+  --accent:#2D63D8; --accent-soft:#E2EAFB; --sticker:#FFCF3F; --pink:#F08BA6; --leaf:#4E9A62; --danger:#C2365C;
+  --wall:#E4ECF6; --wall2:#D5E1EF; --floor:#D7B58A; --floor2:#C9A374; --wood:#9C6B43; --sky:#BFE1F5;
+  --display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
+  --body:"Noto Sans JP","Hiragino Sans",system-ui,sans-serif;
+  --mono:"DM Mono",ui-monospace,"SFMono-Regular",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151B18; --paper:#1F2723; --ink:#EDF2EC; --muted:#9AA79F; --line:#33403A;
+  --accent:#86A8FF; --accent-soft:#25304A; --sticker:#F2C43A; --pink:#E98AA4; --leaf:#67B47B; --danger:#FF8FAE;
+  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151B18; --paper:#1F2723; --ink:#EDF2EC; --muted:#9AA79F; --line:#33403A;
+  --accent:#86A8FF; --accent-soft:#25304A; --sticker:#F2C43A; --pink:#E98AA4; --leaf:#67B47B; --danger:#FF8FAE;
+  --wall:#27313D; --wall2:#2F3B49; --floor:#6A5238; --floor2:#5C4630; --wood:#8A5F3C; --sky:#3C5C73; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.days .until{display:block;font-size:.8rem;font-weight:500}
+.days .until b{font-size:.95rem}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.shopname{font-family:var(--display);font-weight:900;font-size:1.7rem;line-height:1.2;background:none;border:0;padding:0;text-align:left;text-wrap:balance}
+.days{font-family:var(--display);font-weight:700;color:var(--muted);font-size:.95rem}
+.days b{color:var(--ink);font-family:var(--mono);font-size:1.15rem}
+.chapter{flex-shrink:0;font-family:var(--display);font-weight:700;font-size:.8rem;letter-spacing:.06em;background:var(--sticker);color:#2B2410;padding:4px 10px;border-radius:999px;transform:rotate(3deg);margin-top:6px}
+.sample{font-size:.78rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sample span{background:var(--accent-soft);color:var(--accent);padding:1px 8px;border-radius:4px;font-weight:700}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:.78rem}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{display:flex;flex-direction:column;gap:0}
+.stat small{font-size:.72rem;color:var(--muted);letter-spacing:.08em}
+.stat .num{font-size:1.05rem;font-weight:500}
+.stat.profit .num{color:var(--accent)}
+
+/* room */
+.room{position:relative;border-radius:18px;overflow:hidden;border:2px solid var(--ink);background:var(--wall)}
+.room svg{display:block;width:100%;height:auto}
+.it{opacity:0;transform-box:fill-box;transform-origin:50% 100%;transform:scale(.6) translateY(6px);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
+.it.on{opacity:1;transform:none}
+.roomhint{position:absolute;left:10px;bottom:8px;font-size:.72rem;background:var(--paper);color:var(--muted);padding:2px 8px;border-radius:6px;border:1px solid var(--line)}
+
+/* now button */
+.nowbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;border:2px solid var(--ink);background:var(--accent);color:#fff;font-family:var(--display);font-weight:700;font-size:1.05rem;box-shadow:0 4px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+:root[data-theme="dark"] .nowbtn{color:#10172A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nowbtn{color:#10172A}}
+.nowbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+
+/* sections */
+h2{font-family:var(--display);font-weight:700;font-size:1.05rem;margin:0 0 10px;display:flex;align-items:baseline;gap:8px}
+h2 small{font-family:var(--body);font-weight:400;font-size:.75rem;color:var(--muted)}
+.events{display:flex;flex-direction:column;gap:10px}
+.ev{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;transition:transform .15s,border-color .15s}
+.ev:hover{border-color:var(--ink);transform:rotate(-.6deg)}
+.ev .ic{font-size:1.4rem;width:2rem;text-align:center;flex-shrink:0}
+.ev .t{font-weight:700;display:block;line-height:1.4}
+.ev .s{font-size:.78rem;color:var(--muted);display:block}
+.ev .go{margin-left:auto;color:var(--muted);flex-shrink:0}
+.due{display:block;font-size:.76rem;font-family:var(--mono);color:var(--accent);margin-top:2px}
+.due.urgent{color:var(--danger);font-weight:500}
+.duebox{background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.duebox .due{font-size:.9rem;margin:0}
+.duebox small{font-size:.76rem;color:var(--muted)}
+.empty{color:var(--muted);font-size:.88rem}
+
+/* month */
+.month{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:2px;flex:1 1 110px;min-width:0}
+.field label{font-size:.72rem;color:var(--muted);letter-spacing:.05em}
+input{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input[type=number],input[type=month],input[type=date]{font-family:var(--mono)}
+.btn{border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 16px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink)}
+.mlist{font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.mlist div{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--line);padding-top:4px}
+
+/* history */
+.history{display:flex;flex-direction:column}
+.hist-head{font-family:var(--display);font-weight:900;letter-spacing:.14em;font-size:.95rem;margin-bottom:6px}
+.h{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:12px 0;border-top:1px solid var(--line)}
+.h .d{font-family:var(--mono);font-size:.82rem;color:var(--muted);line-height:1.5}
+.h .d em{display:block;font-style:normal;font-size:.72rem}
+.h .ti{font-weight:700;line-height:1.5;min-width:0}
+.h .ti .amt{font-family:var(--mono);font-weight:500;color:var(--accent);margin-left:6px}
+.h .memo{grid-column:2;font-size:.85rem;color:var(--muted);min-width:0}
+.h.fresh .ti{animation:flash 1.6s}
+.h{cursor:pointer;margin-inline:-8px;padding-inline:8px;border-radius:6px;transition:background .15s}
+.h:hover,.h:focus-visible{background:var(--accent-soft)}
+.hint{font-family:var(--body);font-weight:400;font-size:.72rem;color:var(--muted);letter-spacing:0;margin-left:8px}
+.mrow{cursor:pointer}
+.mrow:hover span,.mrow:focus-visible span{color:var(--accent)}
+.acts .left{margin-right:auto}
+.sheet form>.field{flex:none}
+.err{margin:0;color:var(--danger);font-weight:700;font-size:.85rem}
+@keyframes flash{0%{background:var(--sticker)}100%{background:transparent}}
+
+/* sheet */
+.veil{position:fixed;inset:0;background:rgba(10,16,13,.45);display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+.sheet{background:var(--paper);width:100%;max-width:440px;border:2px solid var(--ink);border-radius:20px;padding:22px 18px 20px;max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:14px;animation:up .28s ease-out}
+@keyframes up{from{transform:scale(.94);opacity:0}}
+.sheet h3{font-family:var(--display);font-weight:900;font-size:1.3rem;margin:0;line-height:1.35;text-wrap:balance}
+.steps{display:flex;gap:6px}
+.steps span{flex:1;font-size:.72rem;text-align:center;padding:4px 0;border-radius:6px;background:var(--bg);color:var(--muted);font-weight:700}
+.steps span.cur{background:var(--accent);color:var(--paper)}
+.steps span.done{background:var(--accent-soft);color:var(--accent)}
+.sheet p{margin:0}
+.sheet ul{margin:0;padding-left:1.2em}
+.acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.check{display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.check div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
+.check .ok{color:var(--leaf);font-weight:700}
+.check .no{color:var(--muted)}
+.reco{background:var(--accent-soft);border-radius:12px;padding:12px 14px}
+.reco b{font-family:var(--display);font-size:1.1rem;color:var(--accent)}
+.warn{font-size:.85rem;color:var(--muted)}
+
+/* celebration */
+.cele{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,16,13,.55);padding:16px}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:20px;padding:26px 22px 20px;max-width:340px;width:100%;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.7) rotate(-6deg);opacity:0}}
+.stamp{width:92px;height:92px;border-radius:50%;border:3px solid var(--pink);color:var(--pink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);font-weight:900;transform:rotate(-12deg);line-height:1.1}
+.stamp .e{font-size:1.8rem}
+.stamp .n{font-size:.62rem;letter-spacing:.06em}
+.card h4{font-family:var(--display);font-weight:900;font-size:1.35rem;margin:6px 0 0}
+.card p{margin:0;color:var(--muted);font-size:.9rem}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:21;overflow:hidden}
+.confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:fall 1.6s ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(540deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <a class="brand" href="#top" aria-label="ひとり商店。ホーム">
-      <span class="brand-mark">ひ</span>
-      <span>ひとり商店。</span>
-    </a>
-    <button class="icon-button" id="openSettings" type="button" aria-label="設定を開く">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm8-3.5 2-1.2-2-3.46-2.3.72a8.2 8.2 0 0 0-1.53-.89L15.65 4h-4l-.52 3.17a8.2 8.2 0 0 0-1.53.89L7.3 7.34l-2 3.46 2 1.2a8.77 8.77 0 0 0 0 1.78l-2 1.2 2 3.46 2.3-.72c.48.36 1 .66 1.53.89L11.65 22h4l.52-3.39a8.2 8.2 0 0 0 1.53-.89l2.3.72 2-3.46-2-1.2c.08-.59.08-1.19 0-1.78Z"/></svg>
-    </button>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <div class="top">
+      <div>
+        <button class="shopname" id="shopname" aria-label="屋号と開業日を編集"></button>
+        <div class="days" id="days"></div>
+      </div>
+      <div class="chapter" id="chapter"></div>
+    </div>
+    <div class="sample" id="sampleBar"><span>サンプル</span>表示中の数字と記録は見本です。<button class="linkbtn" id="resetBtn">まっさらから始める</button></div>
   </header>
 
-  <main id="top">
-    <section class="hero wrap">
-      <div class="hero-copy">
-        <div class="eyebrow"><span class="live-dot"></span><span id="dayLabel">開業 1日目</span></div>
-        <p class="kicker">MY LITTLE BUSINESS</p>
-        <h1><span id="shopNameHero">かな商店</span>、<br>育てています。</h1>
-        <p class="hero-note">手続きも、初めての仕事も、ちゃんと「できた日」にして残していく。</p>
-      </div>
-
-      <div class="stage-card" aria-label="事業の成長を表す仕事部屋">
-        <div class="stage-topline">
-          <div>
-            <span class="mini-label">BUSINESS ROOM</span>
-            <strong id="roomLevel">まだ何もない部屋</strong>
-          </div>
-          <div class="level-pill">LV.<span id="levelNumber">01</span></div>
-        </div>
-
-        <div class="room" id="roomScene">
-          <div class="sun-orbit" aria-hidden="true"><span></span></div>
-          <div class="window"><div class="window-sky"><i></i><i></i></div></div>
-          <div class="wall-note note-a">OPEN?</div>
-          <div class="wall-note note-b">dream → work</div>
-          <div class="wall-note note-c">¥</div>
-          <div class="shelf upgrade upgrade-5"><span class="book"></span><span class="book small"></span><span class="tiny-pot"></span></div>
-          <div class="sign upgrade upgrade-1"><span id="roomSignName">かな商店</span></div>
-          <div class="desk">
-            <div class="lamp upgrade upgrade-4"><span class="lamp-head"></span><span class="lamp-neck"></span><span class="lamp-base"></span></div>
-            <div class="laptop upgrade upgrade-6"><span></span></div>
-            <div class="paper-stack upgrade upgrade-7"><i></i><i></i><i></i></div>
-            <div class="mug upgrade upgrade-3"></div>
-          </div>
-          <div class="drawer upgrade upgrade-2"><span></span><span></span></div>
-          <div class="plant upgrade upgrade-8"><span class="leaf l1"></span><span class="leaf l2"></span><span class="leaf l3"></span><span class="stem"></span><span class="pot"></span></div>
-          <div class="floor-card upgrade upgrade-4"><span>BUSINESS</span><b>•••• 0416</b></div>
-          <div class="coin-stack upgrade upgrade-8"><i></i><i></i><i></i></div>
-          <div class="room-caption" id="roomCaption">最初の一歩を待っています。</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="status-strip wrap" aria-label="事業ステータス">
-      <article><span>売上</span><strong id="salesValue">¥0</strong><small>累計</small></article>
-      <article><span>経費</span><strong id="expenseValue">¥0</strong><small>累計</small></article>
-      <article class="profit"><span>利益</span><strong id="profitValue">¥0</strong><small>いまのところ</small></article>
-      <div class="progress-mini">
-        <div class="progress-mini-head"><span>開業クエスト</span><b id="progressText">0 / 8</b></div>
-        <div class="progress-track"><span id="progressBar"></span></div>
-      </div>
-    </section>
-
-    <section class="quest-section wrap" id="questSection">
-      <div class="section-heading">
-        <div>
-          <p class="section-kicker">TODAY'S QUEST</p>
-          <h2>いま、これ。</h2>
-        </div>
-        <span class="scribble-arrow" aria-hidden="true">↘</span>
-      </div>
-
-      <article class="quest-card" id="questCard">
-        <div class="quest-number" id="questNumber">01</div>
-        <div class="quest-main">
-          <div class="quest-meta"><span id="questCategory">はじめの一歩</span><span>+1 room item</span></div>
-          <h3 id="questTitle">屋号を決める</h3>
-          <p id="questDescription">自分の仕事につける、小さな名前。あとから変えても大丈夫。</p>
-          <div class="quest-tip"><span>?</span><p id="questTip">屋号は必須ではないけれど、請求書や口座名などで使えるよ。</p></div>
-        </div>
-        <button class="complete-button" id="completeQuest" type="button">
-          <span>できた！</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg>
-        </button>
-      </article>
-
-      <div class="all-clear" id="allClear" hidden>
-        <span class="clear-stamp">30 DAYS!</span>
-        <h3>最初の章、クリア。</h3>
-        <p>「開業する人」から「自分の商売を持つ人」になりました。</p>
-        <button class="secondary-button" id="restartButton" type="button">もう一度あそぶ</button>
-      </div>
-    </section>
-
-    <section class="roadmap-section wrap">
-      <div class="section-heading compact">
-        <div>
-          <p class="section-kicker">YOUR ROAD</p>
-          <h2>商売の足あと。</h2>
-        </div>
-        <p class="section-aside">終わったものから、<br>シールが貼られていく。</p>
-      </div>
-
-      <div class="roadmap-shell">
-        <div class="road-line" aria-hidden="true"></div>
-        <div class="milestones" id="milestones"></div>
-      </div>
-    </section>
-
-    <section class="history-section wrap">
-      <div class="section-heading compact">
-        <div>
-          <p class="section-kicker">BUSINESS DIARY</p>
-          <h2>できた日の記録。</h2>
-        </div>
-        <div class="sticker-count"><b id="stickerCount">0</b><span>STICKERS</span></div>
-      </div>
-
-      <div class="history-grid">
-        <div class="history-list" id="historyList">
-          <div class="history-empty">
-            <span>✦</span>
-            <p>最初の「できた！」が<br>ここに残るよ。</p>
-          </div>
-        </div>
-        <aside class="next-chapter">
-          <span class="tape"></span>
-          <p class="mini-label">COMING NEXT</p>
-          <h3>開業後も、<br>ちゃんと続く。</h3>
-          <div class="future-list">
-            <span>初めてのリピーター</span>
-            <span>月商10万円</span>
-            <span>初めて単価を上げた</span>
-            <span>初確定申告</span>
-            <span>年商100万円</span>
-          </div>
-          <p class="future-note">チェックリストではなく、<br>あなたの商売の年表へ。</p>
-        </aside>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer wrap">
-    <p>ひとり商店。 <span>prototype 01</span></p>
-    <p>あなたの仕事は、あなたのペースで育つ。</p>
-  </footer>
-
-  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
-    <div class="toast-star">✦</div>
-    <div><span>ACHIEVEMENT</span><strong id="toastTitle">できた！</strong><p id="toastText">部屋に新しいものが増えました。</p></div>
+  <div class="stats">
+    <div class="stat"><small>累計売上</small><span class="num" id="sSales"></span></div>
+    <div class="stat"><small>累計経費</small><span class="num" id="sExp"></span></div>
+    <div class="stat profit"><small>利益</small><span class="num" id="sProfit"></span></div>
   </div>
 
-  <dialog class="settings-dialog" id="settingsDialog">
-    <form method="dialog" class="settings-card" id="settingsForm">
-      <div class="dialog-head"><div><span class="mini-label">YOUR SHOP</span><h2>商店の設定</h2></div><button class="icon-button" value="cancel" aria-label="閉じる" type="submit">×</button></div>
-      <label>屋号<input id="shopNameInput" maxlength="18" autocomplete="off" value="かな商店"></label>
-      <label>開業日<input id="startDateInput" type="date"></label>
-      <div class="dialog-actions">
-        <button class="secondary-button danger" id="resetProgress" type="button">進行をリセット</button>
-        <button class="complete-button small" value="save" type="submit">保存する</button>
-      </div>
-    </form>
-  </dialog>
+  <div class="room" aria-label="仕事部屋">
+    <svg viewBox="0 0 360 250" role="img" aria-label="自分の仕事部屋のイラスト。出来事を記録すると物が増える">
+      <!-- awning: 初確定申告 -->
+      <rect x="0" y="0" width="360" height="178" style="fill:var(--wall)"/>
+      <rect x="0" y="150" width="360" height="28" style="fill:var(--wall2)"/>
+      <rect x="0" y="178" width="360" height="72" style="fill:var(--floor)"/>
+      <g style="stroke:var(--floor2)" stroke-width="2"><line x1="0" y1="205" x2="360" y2="205"/><line x1="0" y1="230" x2="360" y2="230"/></g>
+      <!-- window -->
+      <rect x="244" y="36" width="88" height="72" rx="4" style="fill:var(--sky);stroke:var(--ink)" stroke-width="3"/>
+      <line x1="288" y1="36" x2="288" y2="108" style="stroke:var(--ink)" stroke-width="3"/>
+      <line x1="244" y1="72" x2="332" y2="72" style="stroke:var(--ink)" stroke-width="3"/>
+      <!-- desk (always) -->
+      <rect x="112" y="150" width="152" height="10" rx="2" style="fill:var(--wood);stroke:var(--ink)" stroke-width="2.5"/>
+      <rect x="122" y="160" width="8" height="40" style="fill:var(--wood);stroke:var(--ink)" stroke-width="2"/>
+      <rect x="246" y="160" width="8" height="40" style="fill:var(--wood);stroke:var(--ink)" stroke-width="2"/>
 
-  <script src="app.js"></script>
+      <g class="it" data-k="shinkoku">
+        <path d="M0 0H360V14Q351 26 342 14Q333 26 324 14Q315 26 306 14Q297 26 288 14Q279 26 270 14Q261 26 252 14Q243 26 234 14Q225 26 216 14Q207 26 198 14Q189 26 180 14Q171 26 162 14Q153 26 144 14Q135 26 126 14Q117 26 108 14Q99 26 90 14Q81 26 72 14Q63 26 54 14Q45 26 36 14Q27 26 18 14Q9 26 0 14Z" style="fill:var(--pink);stroke:var(--ink)" stroke-width="2"/>
+        <g style="fill:var(--paper)" opacity=".85"><rect x="18" y="0" width="18" height="14"/><rect x="54" y="0" width="18" height="14"/><rect x="90" y="0" width="18" height="14"/><rect x="126" y="0" width="18" height="14"/><rect x="162" y="0" width="18" height="14"/><rect x="198" y="0" width="18" height="14"/><rect x="234" y="0" width="18" height="14"/><rect x="270" y="0" width="18" height="14"/><rect x="306" y="0" width="18" height="14"/><rect x="342" y="0" width="18" height="14"/></g>
+      </g>
+      <!-- sign: 屋号 -->
+      <g class="it" data-k="yago">
+        <line x1="40" y1="22" x2="40" y2="34" style="stroke:var(--ink)" stroke-width="2"/>
+        <line x1="150" y1="22" x2="150" y2="34" style="stroke:var(--ink)" stroke-width="2"/>
+        <rect x="24" y="32" width="142" height="34" rx="6" style="fill:var(--paper);stroke:var(--ink)" stroke-width="3"/>
+        <text id="signText" x="95" y="55" text-anchor="middle" style="fill:var(--ink);font-family:var(--display);font-weight:900;font-size:16px"></text>
+      </g>
+      <!-- OPEN: 開業届 -->
+      <g class="it" data-k="kaigyo">
+        <line x1="78" y1="66" x2="70" y2="78" style="stroke:var(--ink)" stroke-width="1.5"/>
+        <line x1="112" y1="66" x2="120" y2="78" style="stroke:var(--ink)" stroke-width="1.5"/>
+        <rect x="62" y="78" width="66" height="22" rx="4" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="2.5"/>
+        <text x="95" y="94" text-anchor="middle" style="fill:#2B2410;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:2px">OPEN</text>
+      </g>
+      <!-- calendar: 開業日 -->
+      <g class="it" data-k="opendate">
+        <rect x="186" y="44" width="38" height="44" rx="3" style="fill:var(--paper);stroke:var(--ink)" stroke-width="2.5"/>
+        <rect x="186" y="44" width="38" height="12" rx="3" style="fill:var(--pink);stroke:var(--ink)" stroke-width="2.5"/>
+        <text x="205" y="81" text-anchor="middle" style="fill:var(--ink);font-family:var(--mono);font-size:16px">1</text>
+      </g>
+      <!-- shelf: 売上10万 -->
+      <g class="it" data-k="sales10">
+        <rect x="14" y="118" width="88" height="6" style="fill:var(--wood);stroke:var(--ink)" stroke-width="2"/>
+        <rect x="20" y="96" width="10" height="22" style="fill:var(--accent);stroke:var(--ink)" stroke-width="1.5"/>
+        <rect x="31" y="100" width="10" height="18" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.5"/>
+        <rect x="42" y="94" width="10" height="24" style="fill:var(--pink);stroke:var(--ink)" stroke-width="1.5"/>
+      </g>
+      <!-- trophy: 単価を上げた -->
+      <g class="it" data-k="raise">
+        <path d="M74 98h18v6q0 9-9 9t-9-9z" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.8"/>
+        <rect x="79" y="112" width="8" height="6" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.5"/>
+      </g>
+      <!-- frame: リピーター -->
+      <g class="it" data-k="repeat">
+        <rect x="200" y="100" width="32" height="26" rx="2" style="fill:var(--paper);stroke:var(--ink)" stroke-width="2.5"/>
+        <path d="M216 120c-6-4-8-7-6-9.5 1.5-1.8 4.5-1 6 1.2 1.5-2.2 4.5-3 6-1.2 2 2.5 0 5.5-6 9.5z" style="fill:var(--pink)"/>
+      </g>
+      <!-- pc: 会計ソフト -->
+      <g class="it" data-k="software">
+        <rect x="196" y="116" width="52" height="34" rx="3" style="fill:var(--ink)"/>
+        <rect x="200" y="120" width="44" height="24" style="fill:var(--accent-soft)"/>
+        <polyline points="204,138 214,132 222,135 238,124" fill="none" style="stroke:var(--accent)" stroke-width="2.5"/>
+      </g>
+      <!-- register: 事業口座 -->
+      <g class="it" data-k="bank">
+        <rect x="124" y="126" width="44" height="24" rx="3" style="fill:var(--accent);stroke:var(--ink)" stroke-width="2.5"/>
+        <rect x="130" y="118" width="26" height="10" rx="2" style="fill:var(--paper);stroke:var(--ink)" stroke-width="2"/>
+        <g style="fill:var(--paper)"><rect x="130" y="134" width="6" height="4"/><rect x="139" y="134" width="6" height="4"/><rect x="148" y="134" width="6" height="4"/><rect x="130" y="141" width="6" height="4"/><rect x="139" y="141" width="6" height="4"/></g>
+      </g>
+      <!-- envelope: 初請求 -->
+      <g class="it" data-k="invoice">
+        <rect x="172" y="136" width="22" height="14" style="fill:var(--paper);stroke:var(--ink)" stroke-width="2"/>
+        <polyline points="172,136 183,145 194,136" fill="none" style="stroke:var(--ink)" stroke-width="1.8"/>
+      </g>
+      <!-- ledger: 初経費 -->
+      <g class="it" data-k="expense">
+        <rect x="170" y="128" width="24" height="7" rx="1" style="fill:var(--leaf);stroke:var(--ink)" stroke-width="1.8"/>
+      </g>
+      <!-- card: 事業用カード -->
+      <g class="it" data-k="card">
+        <rect x="250" y="141" width="12" height="9" rx="1.5" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.5"/>
+      </g>
+      <!-- memo: 見積書 -->
+      <g class="it" data-k="estimate">
+        <rect x="108" y="128" width="12" height="16" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.5" transform="rotate(-8 114 136)"/>
+      </g>
+      <!-- plant: 初入金 -->
+      <g class="it" data-k="payment">
+        <ellipse cx="300" cy="166" rx="10" ry="18" style="fill:var(--leaf);stroke:var(--ink)" stroke-width="2" transform="rotate(-25 300 166)"/>
+        <ellipse cx="318" cy="164" rx="10" ry="20" style="fill:var(--leaf);stroke:var(--ink)" stroke-width="2" transform="rotate(22 318 164)"/>
+        <ellipse cx="309" cy="156" rx="8" ry="20" style="fill:var(--leaf);stroke:var(--ink)" stroke-width="2"/>
+        <path d="M294 182h30l-4 26h-22z" style="fill:var(--pink);stroke:var(--ink)" stroke-width="2.5"/>
+      </g>
+      <!-- corkboard: 年金・保険・失業保険・県の届け出 -->
+      <g class="it" data-any="nenkin kenpo koyo kenzei">
+        <rect x="136" y="72" width="44" height="40" rx="3" style="fill:var(--floor);stroke:var(--ink)" stroke-width="2.5"/>
+      </g>
+      <g class="it" data-k="nenkin"><rect x="141" y="77" width="14" height="13" style="fill:var(--accent)"/></g>
+      <g class="it" data-k="kenpo"><rect x="160" y="77" width="14" height="13" style="fill:var(--pink)" transform="rotate(6 167 83)"/></g>
+      <g class="it" data-k="koyo"><rect x="141" y="94" width="14" height="13" style="fill:var(--sticker)" transform="rotate(-5 148 100)"/></g>
+      <g class="it" data-k="kenzei">
+        <circle cx="167" cy="100" r="7" style="fill:var(--paper);stroke:var(--danger)" stroke-width="2"/>
+        <text x="167" y="103.5" text-anchor="middle" style="fill:var(--danger);font-family:var(--display);font-weight:900;font-size:9px">県</text>
+      </g>
+      <!-- sticker on window: インボイス -->
+      <g class="it" data-k="invoice_reg">
+        <circle cx="318" cy="50" r="8" style="fill:var(--sticker);stroke:var(--ink)" stroke-width="1.8"/>
+        <text x="318" y="54" text-anchor="middle" style="fill:#2B2410;font-family:var(--mono);font-weight:500;font-size:10px">T</text>
+      </g>
+      <!-- file box: 書類の保存 -->
+      <g class="it" data-k="hozon">
+        <rect x="218" y="174" width="24" height="26" rx="2" style="fill:var(--accent-soft);stroke:var(--ink)" stroke-width="2"/>
+        <line x1="224" y1="180" x2="224" y2="196" style="stroke:var(--accent)" stroke-width="2"/>
+        <line x1="230" y1="180" x2="230" y2="196" style="stroke:var(--pink)" stroke-width="2"/>
+        <line x1="236" y1="180" x2="236" y2="196" style="stroke:var(--leaf)" stroke-width="2"/>
+      </g>
+      <!-- box: 退職 -->
+      <g class="it" data-k="taishoku">
+        <rect x="172" y="172" width="42" height="28" rx="2" style="fill:var(--floor2);stroke:var(--ink)" stroke-width="2.5"/>
+        <line x1="193" y1="172" x2="193" y2="184" style="stroke:var(--ink)" stroke-width="2"/>
+        <rect x="185" y="180" width="16" height="6" style="fill:var(--sticker)"/>
+      </g>
+      <!-- tax: 税金 -->
+      <g class="it" data-k="tax">
+        <rect x="40" y="186" width="34" height="26" rx="3" style="fill:var(--paper);stroke:var(--ink)" stroke-width="2"/>
+        <text x="57" y="204" text-anchor="middle" style="fill:var(--ink);font-family:var(--display);font-weight:900;font-size:12px">納</text>
+      </g>
+      <!-- rug: 年商100万 -->
+      <g class="it" data-k="y100">
+        <ellipse cx="190" cy="226" rx="70" ry="14" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2.5" stroke-dasharray="6 4"/>
+      </g>
+    </svg>
+    <div class="roomhint" id="roomhint"></div>
+  </div>
+
+  <button class="nowbtn" id="nowBtn">いま何すればいい？</button>
+
+  <section>
+    <h2>次の出来事 <small>タップすると「なぜ→どうやる→できた」まで進めます</small></h2>
+    <div class="events" id="events"></div>
+  </section>
+
+  <section>
+    <h2>今月のお金 <small>月に1回だけ入れればOK</small></h2>
+    <form class="month" id="monthForm" novalidate>
+      <div class="row">
+        <div class="field"><label for="mMonth">月</label><input type="month" id="mMonth" required></div>
+        <div class="field"><label for="mSales">売上（円）</label><input type="number" id="mSales" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+        <div class="field"><label for="mExp">経費（円）</label><input type="number" id="mExp" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+        <button class="btn" type="submit">記録</button>
+      </div>
+      <p class="err" id="mErr" hidden></p>
+      <div class="mlist" id="mlist"></div>
+    </form>
+  </section>
+
+  <section class="history">
+    <div class="hist-head">MY BUSINESS HISTORY<span class="hint">タップで直せます</span></div>
+    <div id="history"></div>
+  </section>
+</div>
+
+<div id="layer"></div>
+
+<script>
+const EVENTS=[
+ {k:'taishoku',ch:0,ic:'📦',t:'会社を辞めた',done:'会社を辞めました',msg:'部屋に段ボールがひとつ届きました。ここから準備期のはじまりです。',rec:'会社員を卒業する',
+  why:'退職日は、自分の事業の準備が本格的に始まる日。このアプリはここから「準備◯日目」を数えます。',
+  how:['最終出社日ではなく、退職日を記録する','記録すると、年金や健康保険の切り替え期限がわかるようになる']},
+ {k:'nenkin',ch:0,ic:'🪪',t:'国民年金に切り替えた',done:'国民年金に切り替えました',msg:'壁にコルクボードがつきました。',rec:'年金を切り替える',
+  why:'会社員の間は厚生年金でしたが、退職したら自分で国民年金に入る手続きをします。期限が短いので、退職したらまずこれ。',
+  how:['住んでいる市区町村の役所（国民年金の窓口）で手続きする。電子申請もできる','基礎年金番号がわかるもの（マイナンバーカードなど）と、退職日がわかる書類（離職票など）を用意する']},
+ {k:'kenpo',ch:0,ic:'🏥',t:'健康保険を切り替えた',done:'健康保険を切り替えました',msg:'ボードにメモが1枚増えました。',rec:'健康保険を選んで切り替える',
+  why:'退職すると会社の健康保険は使えなくなります。任意継続にするか、国民健康保険にするかを選んで手続きします。',
+  how:['任意継続：加入していた健康保険（協会けんぽや健保組合）に申し出る。期限が短い','国民健康保険：市区町村の役所で手続きする。期限と保険料は役所の案内で確認','両方の保険料を比べてから選ぶ']},
+ {k:'koyo',ch:0,ic:'📄',t:'失業保険をどうするか決めた',done:'失業保険の方針が決まりました',msg:'ボードにメモがもう1枚。',rec:'失業保険のことを確かめる',
+  why:'離職後に事業を始めた人向けに、事業をしている期間を最大3年まで失業保険の受給期間に数えない特例があります。',
+  how:['離職票を受け取ったら、ハローワークで自分の場合を相談する','開業する時期とあわせて、特例を申請するか決める']},
+ {k:'yago',ch:0,ic:'🪧',t:'屋号を決めた',done:'屋号が決まりました',msg:'お店に看板がかかりました。',rec:'お店の名前を決める',
+  why:'屋号は請求書や口座名義、名刺に使う「お店の名前」。先に決めておくと、このあとの手続きがスムーズになります。',
+  how:['呼びやすく、検索して他と被りにくい名前を3つ書き出す','声に出して名乗ってみて、しっくりくるものを選ぶ','ドメインやSNSのアカウント名が空いているかも見ておく']},
+ {k:'opendate',ch:0,ic:'📅',t:'開業日を決めた',done:'開業日が決まりました',msg:'壁にカレンダーが貼られました。',rec:'始まりの日を決める',
+  why:'開業日は事業の「誕生日」。開業届に書く日付になり、このアプリの「開業◯日目」もここから数えます。',
+  how:['退職日や最初の仕事の予定から逆算して決める','覚えやすい日にしてもいい']},
+ {k:'software',ch:0,ic:'💻',t:'会計ソフトを決めた',done:'会計ソフトが決まりました',msg:'机にパソコンが置かれました。',rec:'お金を記録する道具を決める',
+  why:'確定申告までの帳簿づけを手作業でやるのは大変。最初に道具を決めておくと、日々の記録が習慣になります。',
+  how:['無料期間のあるサービスを2つほど試す','銀行口座やカードと連携できるかを見る','迷ったら、まわりの個人事業主が使っているものにする']},
+ {k:'kaigyo',ch:1,ic:'📮',t:'開業届を出した',done:'開業届を出しました',msg:'お店に「OPEN」の札が出ました。',rec:'事業を始めたことを届け出る',
+  why:'税務署に「事業を始めました」と伝える届け出です。期限は開業した年の確定申告期限までですが、期限の短い青色申告の申請と一緒に出すと忘れません。',
+  how:['税務署の窓口・郵送・e-Taxのどれで出すか決める','控えは必ず手元に残す。屋号付きの口座を作るときなどに求められることがある']},
+ {k:'aoiro',ch:1,ic:'📘',t:'青色申告を申請した',done:'青色申告を申請しました',msg:'事業の記録が、一歩本格的になりました。',rec:'青色申告の申請を出す',
+  why:'青色申告には税金面のメリットがあります。1月16日以後に開業した場合、申請は開業日から2か月以内。過ぎるとその年は白色申告になります。',
+  how:['開業届と同じタイミングで申請書を出す','提出先は税務署。e-Taxでも出せる']},
+ {k:'kenzei',ch:1,ic:'🏯',t:'県に開業を届け出た',done:'県への届け出が済みました',msg:'ボードに「県」のはんこが押されました。',rec:'県にも開業を届け出る',
+  why:'税務署とは別に、都道府県にも個人事業の開業を届け出ます。',
+  how:['事業所のある地域の県税事務所に出す','石川県は開業後1か月以内。ほかの都道府県は県の案内で確認']},
+ {k:'invoice_reg',ch:1,ic:'🏷️',t:'インボイス登録を決めた',done:'インボイスの方針が決まりました',msg:'窓に小さなシールが貼られました。',rec:'インボイス登録するか決める',
+  why:'登録は任意です。登録すると取引先にインボイス（適格請求書）を出せますが、消費税の申告が必要になります。',
+  how:['取引先が登録を求めているか聞いてみる','国税庁のチェックシートで検討する','登録するなら、登録希望日を書いて税務署に申請する']},
+ {k:'bank',ch:1,ic:'🏦',t:'事業口座を作った',done:'事業口座ができました',msg:'お店にレジが置かれました。',rec:'事業のお金を分ける',
+  why:'生活のお金と事業のお金が混ざると、確定申告のときに仕分けが大変になります。入り口を分けるのが一番効きます。',
+  how:['ネット銀行など、手数料と使いやすさで選ぶ','屋号付きの名義にできるかを確認する','作ったら会計ソフトと連携する']},
+ {k:'card',ch:1,ic:'💳',t:'事業用カードを作った',done:'事業用カードができました',msg:'机に事業用のカードが置かれました。',rec:'経費の支払いを一本化する',
+  why:'経費をこのカードに寄せると、明細がそのまま帳簿の材料になります。',
+  how:['事業口座から引き落とせるカードを選ぶ','サブスクや通信費の支払い先をこのカードに切り替える']},
+ {k:'estimate',ch:2,ic:'📝',t:'初めて見積書を送った',done:'初めての見積書！',msg:'あなたの仕事に、初めて値段がつきました。',rec:'最初の見積もりを出す',
+  why:'見積書は「この内容をこの金額で」という約束の下書き。あとで揉めないための土台です。',
+  how:['作業範囲・金額・納期・支払い条件を書く','会計ソフトや請求書サービスのひな形を使う'],amount:true},
+ {k:'invoice',ch:2,ic:'🧾',t:'初めて請求した',done:'初めての請求書！',msg:'あなたの事業から、初めてお金を請求しました。',rec:'最初の請求書を送る',
+  why:'仕事が終わったら、請求しないとお金は入ってきません。請求書は事業の売上の記録にもなります。',
+  how:['請求日・支払期限・振込先を入れる','送ったら会計ソフトに売上として記録する'],amount:true},
+ {k:'payment',ch:2,ic:'🌱',t:'初めて入金された',done:'初めての入金！',msg:'お店に植物が芽を出しました。',rec:'入金を確かめる',
+  why:'請求したお金が実際に届いた瞬間。入金の確認と、請求との突き合わせまでが仕事です。',
+  how:['事業口座の入金を確認する','請求書と金額が合っているか見る','会計ソフトで入金済みにする'],amount:true},
+ {k:'expense',ch:2,ic:'📗',t:'初めて経費を登録した',done:'初めての経費！',msg:'机に帳簿が置かれました。',rec:'経費を記録する',
+  why:'事業のために使ったお金を記録すると、利益が正しくわかり、税金の計算にもつながります。',
+  how:['レシートや領収書を捨てずに取っておく','会計ソフトに日付・金額・内容を登録する'],amount:true},
+ {k:'hozon',ch:2,ic:'🗂️',t:'書類の保存方法を決めた',done:'書類の置き場所が決まりました',msg:'机の下にファイルボックスが置かれました。',rec:'請求書や領収書の保存方法を決める',
+  why:'見積書・請求書・領収書は保存が必要です。メールやPDFで受け取ったデータには、保存方法のルールがあります。',
+  how:['紙はファイルに、データは決めたフォルダにまとめる','データの保存方法は国税庁の電子帳簿保存法の案内で確認する']},
+ {k:'repeat',ch:3,ic:'🤝',t:'リピーターができた',done:'リピーターができました',msg:'壁に小さな額が飾られました。',rec:'もう一度頼んでくれた人を大事にする',
+  why:'2回目の依頼は、仕事が信頼された証拠。事業が「回り始めた」いちばんの合図です。',how:['どこが良かったか聞いてみる','次の提案ができないか考える']},
+ {k:'decline',ch:3,ic:'✋',t:'初めて仕事を断った',done:'初めて仕事を断りました',msg:'自分の事業の形を、自分で選びました。',rec:'受ける仕事を選ぶ',
+  why:'全部を受けると、続けたい仕事に時間を使えなくなります。断るのも事業の判断です。',how:['断る理由を短く伝える','可能なら別の人や時期を提案する']},
+ {k:'tax',ch:4,ic:'🏛️',t:'初めて税金を払った',done:'初めての納税',msg:'事業が社会とつながりました。',rec:'税金の支払いを済ませる',
+  why:'事業で得た利益から税金を納めるのは、事業者になった証拠のひとつです。',how:['納付期限と方法を通知や税務署の案内で確認する','払ったら記録する'],amount:true},
+ {k:'shinkoku',ch:4,ic:'🏠',t:'初確定申告',done:'初めての確定申告！',msg:'お店の外観が少し立派になりました。',rec:'1年分をまとめて申告する',
+  why:'1年間の売上と経費をまとめて、税金を計算して申告します。事業の「1年目の通知表」です。',
+  how:['会計ソフトで1年分の記録を整える','申告期間は翌年2月16日〜3月15日','e-Taxか税務署で提出する']},
+ {k:'raise',ch:4,ic:'🏆',t:'単価を上げた',done:'はじめて単価を上げた日',msg:'棚に小さなトロフィーが置かれました。',rec:'自分の仕事の値段を見直す',
+  why:'経験が積み重なったら、値段に反映していい。続けるための大事な一歩です。',how:['今の仕事にかかっている時間を数える','新しい依頼から新しい金額を出す'],amount:true},
+ // automatic
+ {k:'sales10',ch:3,ic:'📚',t:'累計売上10万円',done:'売上10万円突破',msg:'壁に棚がつきました。',auto:true},
+ {k:'black3',ch:3,ic:'📈',t:'3ヶ月連続黒字',done:'3ヶ月連続黒字',msg:'商売が回り始めました。',auto:true},
+ {k:'y100',ch:4,ic:'🧶',t:'累計売上100万円',done:'売上100万円突破',msg:'床にラグが敷かれました。',auto:true},
+ {k:'y300',ch:4,ic:'⭐',t:'累計売上300万円',done:'売上300万円突破',msg:'ここまで続けてきた証です。',auto:true},
+];
+const CHAPTERS=['準備期','開業期','最初の仕事','商売が回り始める','安定期'];
+const BYK=Object.fromEntries(EVENTS.map(e=>[e.k,e]));
+const KEY='hitori-shoten-v1';
+
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function sample(){return{sample:true,name:'かな商店',start:'2026-09-02',
+  done:{taishoku:{date:'2026-08-15',memo:'最後の日、チームのみんなに花束をもらった。'},nenkin:{date:'2026-08-19'},kenpo:{date:'2026-08-19',memo:'保険料を比べて国保にした。'},
+        koyo:{date:'2026-08-25'},kenzei:{date:'2026-09-10'},yago:{date:'2026-08-20',memo:'いろいろ悩んで、結局いちばん素直な名前に。'},opendate:{date:'2026-08-22'},software:{date:'2026-08-28'},
+        kaigyo:{date:'2026-09-02',memo:'税務署まで歩いて出しにいった。'},aoiro:{date:'2026-09-02'},expense:{date:'2026-09-10',amount:3200},
+        invoice:{date:'2026-09-20',amount:50000,memo:'研修資料づくりの仕事。'},payment:{date:'2026-09-30',amount:50000},sales10:{date:'2026-10-04'}},
+  months:{'2026-09':{s:80000,e:21000},'2026-10':{s:48400,e:11100}}}}
+function blank(){return{sample:false,name:'',start:'',done:{},months:{}}}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+if(!S||typeof S!=='object')S=sample();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const $=id=>document.getElementById(id);
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Days counted from `from` (day 1 = that date). Pure.
+function daysSince(from,date){if(!from||!date)return null;const a=new Date(from+'T00:00'),b=new Date(date+'T00:00');return Math.round((b-a)/864e5)+1}
+function dayN(date){return daysSince(S.start,date)}
+function quitDate(){return S.done.taishoku?S.done.taishoku.date:''}
+// Label for a date: 開業N日目 from the opening day, 準備N日目 from the day you left your job.
+function dayLabel(date){
+  const open=dayN(date);if(open!=null&&open>=1)return'開業'+open+'日目';
+  const prep=daysSince(quitDate(),date);if(prep!=null&&prep>=1)return'準備'+prep+'日目';
+  return'';
+}
+
+// --- deadlines (no DOM). Dates are guides; weekends/holidays may push the real deadline later. ---
+function ymd(x){return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')}
+function addDays(d,n){const x=new Date(d+'T00:00');x.setDate(x.getDate()+n);return ymd(x)}
+function addMonths(d,n){const x=new Date(d+'T00:00'),day=x.getDate();x.setMonth(x.getMonth()+n);if(x.getDate()<day)x.setDate(0);return ymd(x)}
+const DEADLINES={
+  nenkin:{base:'quit',calc:q=>addDays(q,14),note:'退職日の翌日から14日以内'},
+  kenpo:{base:'quit',calc:q=>addDays(q,20),note:'任意継続にする場合、資格喪失日（退職日の翌日）から20日以内'},
+  kenzei:{base:'start',calc:s=>addMonths(s,1),note:'石川県は開業後1か月以内'},
+  aoiro:{base:'start',calc:s=>s.slice(5)>='01-16'?addMonths(s,2):s.slice(0,4)+'-03-15',note:'1月16日以後の開業は開業日から2か月以内（それより前は3月15日まで）'},
+  kaigyo:{base:'start',calc:s=>(Number(s.slice(0,4))+1)+'-03-15',note:'開業した年の確定申告期限まで'},
+};
+// {date, left, note} when computable; {need:'quit'|'start', note} when the base date is missing; null when no deadline.
+function deadlineOf(k,today){
+  const d=DEADLINES[k];if(!d)return null;
+  const base=d.base==='quit'?quitDate():S.start;
+  if(!base||!DATE_RE.test(base))return{need:d.base,note:d.note};
+  const date=d.calc(base);
+  return{date,left:daysSince(today,date)-1,note:d.note};
+}
+function dueText(dl){
+  if(!dl)return'';
+  if(dl.need)return(dl.need==='quit'?'退職日':'開業日')+'を記録すると期限がわかります';
+  if(dl.left<0)return'期限 '+fmtDate(dl.date)+'（過ぎています）';
+  return'期限 '+fmtDate(dl.date)+'・'+(dl.left===0?'今日まで':'あと'+dl.left+'日');
+}
+function dueClass(dl){return dl&&!dl.need&&dl.left<=7?'due urgent':'due'}
+function fmtDate(d){return d.replace(/-/g,'.')}
+function totals(){let s=0,e=0;for(const m of Object.values(S.months)){s+=m.s||0;e+=m.e||0}return{s,e,p:s-e}}
+function curChapter(){for(let c=0;c<CHAPTERS.length;c++){const ev=EVENTS.filter(e=>e.ch===c&&!e.auto);if(ev.some(e=>!S.done[e.k]))return c}return CHAPTERS.length-1}
+function shopName(){return S.name||'わたしの商店'}
+
+// Header line under the shop name. Returns trusted markup built from numbers only.
+function headerDays(today){
+  const open=dayN(today);
+  if(open!=null&&open>=1)return'開業 <b>'+open+'</b> 日目';
+  const prep=daysSince(quitDate(),today);
+  const left=open!=null?'開業まで あと <b>'+(1-open)+'</b> 日':'';
+  if(prep!=null&&prep>=1)return'準備 <b>'+prep+'</b> 日目'+(left?'<span class="until">'+left+'</span>':'');
+  if(left)return left;
+  return'会社を辞めた日から、準備期を数えはじめます';
+}
+
+function render(){
+  $('shopname').textContent=shopName();
+  $('signText').textContent=shopName().slice(0,8);
+  $('days').innerHTML=headerDays(todayStr());
+  $('chapter').textContent='第'+(curChapter()+1)+'章 '+CHAPTERS[curChapter()];
+  $('sampleBar').hidden=!S.sample;
+  const t=totals();$('sSales').textContent=yen(t.s);$('sExp').textContent=yen(t.e);$('sProfit').textContent=yen(t.p);
+  // data-k: shown when that event is done; data-any: shown when any of the listed events is done.
+  document.querySelectorAll('.it').forEach(g=>g.classList.toggle('on',(g.dataset.any||g.dataset.k).split(' ').some(k=>S.done[k])));
+  const cnt=Object.keys(S.done).length;
+  $('roomhint').textContent=cnt?'部屋のもの '+cnt+' / '+EVENTS.length:'まだ何もない部屋。出来事を記録すると物が増えます';
+  // next events
+  const next=EVENTS.filter(e=>!e.auto&&!S.done[e.k]).sort((a,b)=>a.ch-b.ch).slice(0,3);
+  $('events').innerHTML=next.length?next.map(evCard).join(''):'<p class="empty">用意した出来事はすべて記録しました。</p>';
+  $('events').querySelectorAll('.ev').forEach(b=>b.onclick=()=>openEvent(b.dataset.k));
+  // months
+  const ms=Object.keys(S.months).sort().reverse();
+  $('mlist').innerHTML=ms.map(m=>`<div class="mrow" role="button" tabindex="0" data-m="${esc(m)}" aria-label="${esc(fmtMonth(m))}のお金を直す"><span class="num">${esc(fmtMonth(m))}</span><span class="num">売上 ${yen(S.months[m].s)} / 経費 ${yen(S.months[m].e)}</span></div>`).join('');
+  bindTap($('mlist').querySelectorAll('.mrow'),el=>openMonth(el.dataset.m));
+  // history
+  const hs=Object.entries(S.done).filter(([k])=>BYK[k]).sort((a,b)=>a[1].date<b[1].date?-1:a[1].date>b[1].date?1:0);
+  $('history').innerHTML=hs.length?hs.map(([k,v])=>{const e=BYK[k];
+    return `<div class="h${v.fresh?' fresh':''}" role="button" tabindex="0" data-k="${k}" aria-label="「${esc(e.done)}」の記録を直す"><div class="d">${fmtDate(v.date)}<em>${dayLabel(v.date)}</em></div><div class="ti">${esc(e.done)}${v.amount!=null?`<span class="amt">${yen(v.amount)}</span>`:''}</div>${v.memo?`<div class="memo">${esc(v.memo)}</div>`:''}</div>`}).join('')
+    :'<p class="empty">最初の出来事を記録すると、ここに年表ができていきます。</p>';
+  bindTap($('history').querySelectorAll('.h'),el=>openEdit(el.dataset.k));
+  hs.forEach(([,v])=>delete v.fresh);
+}
+
+// One card in "次の出来事".
+function evCard(e){
+  const dl=deadlineOf(e.k,todayStr());
+  const due=dl?`<span class="${dueClass(dl)}">${esc(dueText(dl))}</span>`:'';
+  return `<button class="ev" data-k="${e.k}"><span class="ic" aria-hidden="true">${e.ic}</span><span><span class="t">${esc(e.rec)}</span><span class="s">${esc(e.t)}　·　第${e.ch+1}章 ${CHAPTERS[e.ch]}</span>${due}</span><span class="go" aria-hidden="true">›</span></button>`;
+}
+
+// --- small UI helpers ---
+function fmtMonth(m){return m.replace('-','.')}
+function bindTap(nodes,fn){nodes.forEach(el=>{el.onclick=()=>fn(el);el.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();fn(el)}}})}
+function showErr(id,msg){const el=$(id);el.textContent=msg;el.hidden=false}
+
+// --- state operations (no DOM) ---
+// Any change by the user makes the data theirs, so it is no longer treated as the sample.
+function applyRecord(k,rec,extra){
+  S.sample=false;
+  if(k==='yago'&&extra&&extra.name!=null)S.name=extra.name;
+  if(k==='opendate')S.start=rec.date;
+  S.done[k]=rec;
+}
+function removeRecord(k){
+  S.sample=false;
+  delete S.done[k];
+  if(k==='yago')S.name='';
+  if(k==='opendate')S.start='';
+}
+function setMonth(m,v){S.sample=false;S.months[m]=v}
+function removeMonth(m){S.sample=false;delete S.months[m]}
+
+// --- validation (no DOM) ---
+const DATE_RE=/^\d{4}-\d{2}-\d{2}$/, MONTH_RE=/^\d{4}-\d{2}$/;
+function parseYen(str,{optional}={}){ // '' → 0 (or null when optional); returns NaN when invalid
+  const s=String(str??'').trim();
+  if(s==='')return optional?null:0;
+  const n=Number(s);
+  return Number.isInteger(n)&&n>=0?n:NaN;
+}
+
+// --- record form (shared by "できた！" and edit) ---
+function recordFields(k,rec){
+  const e=BYK[k];
+  return `${k==='yago'?`<div class="field"><label for="fName">屋号</label><input id="fName" required maxlength="20" value="${esc(S.name)}" placeholder="例：かな商店"></div>`:''}
+    <div class="field"><label for="fDate">${k==='opendate'?'開業日':'記録する日'}</label><input type="date" id="fDate" required value="${esc(rec.date||'')}"></div>
+    ${e.amount?`<div class="field"><label for="fAmt">金額（円・任意）</label><input type="number" id="fAmt" min="0" step="1" inputmode="numeric" value="${rec.amount!=null?rec.amount:''}"></div>`:''}
+    <div class="field"><label for="fMemo">ひとことメモ（任意）</label><input id="fMemo" maxlength="80" placeholder="今日のこと、ひとこと" value="${esc(rec.memo||'')}"></div>
+    <p class="err" id="fErr" hidden></p>`;
+}
+function readRecordForm(k){
+  const date=$('fDate').value;
+  if(!DATE_RE.test(date))return{err:'日付を入れてください。'};
+  const rec={date};
+  if($('fAmt')){const a=parseYen($('fAmt').value,{optional:true});if(Number.isNaN(a))return{err:'金額は0以上の整数で入れてください。'};if(a!=null)rec.amount=a}
+  const m=$('fMemo').value.trim();if(m)rec.memo=m.slice(0,80);
+  const extra={};
+  if(k==='yago'){const nm=$('fName').value.trim();if(!nm)return{err:'屋号を入れてください。'};extra.name=nm.slice(0,20)}
+  return{rec,extra};
+}
+
+function openEdit(k,confirmDel){
+  const e=BYK[k],rec=S.done[k];if(!e||!rec)return;
+  if(confirmDel){
+    sheet(`<h3>「${esc(e.done)}」の記録を取り消しますか？</h3><p class="warn">年表と部屋から消えて、「${esc(e.t)}」は次の出来事に戻ります。</p>
+      <div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doDel">取り消す</button></div>`);
+    $('x').onclick=()=>openEdit(k);
+    $('doDel').onclick=()=>{removeRecord(k);save();close();render()};
+    return;
+  }
+  sheet(`<div style="font-size:1.8rem" aria-hidden="true">${e.ic}</div><h3>${esc(e.done)}</h3>
+    <form id="editForm" novalidate style="display:flex;flex-direction:column;gap:10px">${recordFields(k,rec)}
+    ${e.auto?'<p class="warn">売上から自動でついた記録です。日付とメモを直せます。</p>':''}
+    <div class="acts">${e.auto?'':'<button type="button" class="btn ghost left" id="toDel">取り消す</button>'}<button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit">保存</button></div></form>`);
+  $('x').onclick=close;
+  $('toDel')&&($('toDel').onclick=()=>openEdit(k,true));
+  $('editForm').onsubmit=ev=>{ev.preventDefault();
+    const r=readRecordForm(k);if(r.err)return showErr('fErr',r.err);
+    applyRecord(k,r.rec,r.extra);save();close();render();checkAuto();};
+}
+
+function openMonth(m,confirmDel){
+  const v=S.months[m];if(!v)return;
+  if(confirmDel){
+    sheet(`<h3>${esc(fmtMonth(m))} のお金を消しますか？</h3><p class="warn">この月の売上と経費が消え、累計も変わります。</p>
+      <div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doDel">消す</button></div>`);
+    $('x').onclick=()=>openMonth(m);
+    $('doDel').onclick=()=>{removeMonth(m);save();close();render();checkAuto()};
+    return;
+  }
+  sheet(`<h3>${esc(fmtMonth(m))} のお金</h3>
+    <form id="mEdit" novalidate style="display:flex;flex-direction:column;gap:10px"><div class="row">
+      <div class="field"><label for="eSales">売上（円）</label><input type="number" id="eSales" min="0" step="1" inputmode="numeric" value="${v.s}"></div>
+      <div class="field"><label for="eExp">経費（円）</label><input type="number" id="eExp" min="0" step="1" inputmode="numeric" value="${v.e}"></div></div>
+      <p class="err" id="fErr" hidden></p>
+      <div class="acts"><button type="button" class="btn ghost left" id="toDel">この月を消す</button><button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit">保存</button></div></form>`);
+  $('x').onclick=close;
+  $('toDel').onclick=()=>openMonth(m,true);
+  $('mEdit').onsubmit=ev=>{ev.preventDefault();
+    const s=parseYen($('eSales').value),x=parseYen($('eExp').value);
+    if(Number.isNaN(s)||Number.isNaN(x))return showErr('fErr','金額は0以上の整数で入れてください。');
+    setMonth(m,{s,e:x});save();close();render();checkAuto();};
+}
+
+function sheet(html){$('layer').innerHTML=`<div class="veil" id="veil"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;$('veil').onclick=e=>{if(e.target.id==='veil')close()};}
+function close(){$('layer').innerHTML=''}
+
+function openEvent(k,step=0){
+  const e=BYK[k];
+  const st=['なぜ必要？','どうやる？','できた！'].map((s,i)=>`<span class="${i===step?'cur':i<step?'done':''}">${s}</span>`).join('');
+  let body='';
+  const dl=deadlineOf(k,todayStr());
+  const dueBox=dl?`<div class="duebox"><span class="${dueClass(dl)}">${esc(dueText(dl))}</span><small>${esc(dl.note)}。日付は目安なので、正確な期限は窓口の案内で確認してね。</small></div>`:'';
+  if(step===0)body=`<p>${esc(e.why)}</p>${dueBox}<div class="acts"><button class="btn ghost" id="x">あとで</button><button class="btn" id="nx">どうやる？</button></div>`;
+  if(step===1)body=`<ul>${e.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul><div class="acts"><button class="btn ghost" id="bk">戻る</button><button class="btn" id="nx">できた！</button></div>`;
+  if(step===2)body=`<form id="doneForm" novalidate style="display:flex;flex-direction:column;gap:10px">
+    ${recordFields(k,{date:k==='opendate'&&S.start?S.start:todayStr()})}
+    <div class="acts"><button type="button" class="btn ghost" id="bk">戻る</button><button class="btn" type="submit">記録する</button></div></form>`;
+  sheet(`<div style="font-size:1.8rem" aria-hidden="true">${e.ic}</div><h3>${esc(e.t)}</h3><div class="steps">${st}</div>${body}`);
+  $('x')&&($('x').onclick=close);
+  $('nx')&&($('nx').onclick=()=>openEvent(k,step+1));
+  $('bk')&&($('bk').onclick=()=>openEvent(k,step-1));
+  const f=$('doneForm');
+  if(f)f.onsubmit=ev=>{ev.preventDefault();
+    const r=readRecordForm(k);if(r.err)return showErr('fErr',r.err);
+    if(S.sample)leaveSample();
+    r.rec.fresh=true;applyRecord(k,r.rec,r.extra);
+    close();save();render();celebrate([k]);checkAuto();};
+}
+
+function leaveSample(){S=blank()}
+
+function celebrate(keys){
+  if(!keys.length)return;const k=keys[0],e=BYK[k],v=S.done[k];const label=dayLabel(v.date);
+  const colors=['--accent','--sticker','--pink','--leaf'];
+  const conf=Array.from({length:28},(_,i)=>`<i style="left:${Math.random()*100}%;background:var(${colors[i%4]});animation-delay:${Math.random()*.4}s"></i>`).join('');
+  $('layer').innerHTML=`<div class="confetti">${conf}</div><div class="cele" id="cele"><div class="card" role="dialog" aria-modal="true">
+    <div class="stamp"><span class="e" aria-hidden="true">${e.ic}</span><span class="n">${fmtDate(v.date)}</span></div>
+    <h4>${esc(e.done)}</h4><p>${esc(e.msg)}</p>
+    ${label?`<p class="num" style="color:var(--ink)">${label}の出来事</p>`:''}
+    <button class="btn" id="ok" style="margin-top:8px">年表に残す</button></div></div>`;
+  $('ok').focus();
+  $('ok').onclick=()=>{close();celebrate(keys.slice(1))};
+}
+
+// Pure: which automatic milestones are reached, and in which month.
+function evalAuto(months){
+  const ms=Object.keys(months).sort();let cum=0,streak=0;const hit={};
+  const set=(k,m)=>{if(!hit[k])hit[k]=m};
+  for(const m of ms){const v=months[m];cum+=v.s||0;streak=((v.s||0)-(v.e||0))>0?streak+1:0;
+    if(cum>=100000)set('sales10',m);if(cum>=1000000)set('y100',m);if(cum>=3000000)set('y300',m);if(streak>=3)set('black3',m);}
+  return hit;
+}
+function monthEnd(m){const end=new Date(m+'-01T00:00');end.setMonth(end.getMonth()+1);end.setDate(0);
+  const d=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+  return d>todayStr()?todayStr():d}
+function checkAuto(){
+  const hit=evalAuto(S.months);const hits=[];let changed=false;
+  for(const e of EVENTS.filter(e=>e.auto)){
+    if(hit[e.k]&&!S.done[e.k]){S.done[e.k]={date:monthEnd(hit[e.k]),fresh:true};hits.push(e.k);changed=true}
+    else if(!hit[e.k]&&S.done[e.k]){delete S.done[e.k];changed=true}
+  }
+  if(changed&&!hits.length){save();render()}
+  if(hits.length){save();render();if(!$('layer').innerHTML)celebrate(hits);else{const q=hits;const ob=new MutationObserver(()=>{if(!$('layer').innerHTML){ob.disconnect();celebrate(q)}});ob.observe($('layer'),{childList:true})}}
+}
+
+$('monthForm').onsubmit=ev=>{ev.preventDefault();
+  const m=$('mMonth').value;
+  const s=parseYen($('mSales').value),x=parseYen($('mExp').value);
+  if(!MONTH_RE.test(m))return showErr('mErr','月を選んでください。');
+  if(Number.isNaN(s)||Number.isNaN(x))return showErr('mErr','金額は0以上の整数で入れてください。');
+  $('mErr').hidden=true;
+  if(S.sample)leaveSample();
+  setMonth(m,{s,e:x});
+  $('mSales').value='';$('mExp').value='';save();render();checkAuto();};
+$('mMonth').value=todayStr().slice(0,7);
+
+$('nowBtn').onclick=()=>{
+  const c=curChapter();const list=EVENTS.filter(e=>e.ch===c);
+  const next=EVENTS.filter(e=>!e.auto&&!S.done[e.k]).sort((a,b)=>a.ch-b.ch)[0];
+  sheet(`<h3>今の${esc(shopName())}</h3><div class="steps"><span class="cur">第${c+1}章 ${CHAPTERS[c]}</span></div>
+   <div class="check">${list.map(e=>`<div><span>${esc(e.t)}</span><span class="${S.done[e.k]?'ok':'no'}">${S.done[e.k]?'✓':e.auto?'自動':'未'}</span></div>`).join('')}</div>
+   ${next?`<div class="reco">次は「<b>${esc(next.rec)}</b>」のがおすすめ。</div><div class="acts"><button class="btn ghost" id="x">閉じる</button><button class="btn" id="go">${esc(next.ic)} はじめる</button></div>`:'<p>用意した出来事はすべて記録しました。</p><div class="acts"><button class="btn" id="x">閉じる</button></div>'}`);
+  $('x').onclick=close;$('go')&&($('go').onclick=()=>openEvent(next.k));
+};
+
+function openSettings(confirmReset){
+  sheet(`<h3>${confirmReset?'まっさらから始めますか？':'お店の設定'}</h3>
+   ${confirmReset?`<p class="warn">いま表示している見本の記録と数字はすべて消えます。</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`
+   :`<form id="setForm" style="display:flex;flex-direction:column;gap:10px"><div class="field"><label for="sName">屋号</label><input id="sName" value="${esc(S.name)}" placeholder="例：かな商店"></div>
+   <div class="field"><label for="sStart">開業日</label><input type="date" id="sStart" value="${esc(S.start)}"></div>
+   <div class="acts"><button type="button" class="btn ghost" id="toReset">すべての記録を消す</button><button class="btn" type="submit">保存</button></div></form>`}`);
+  $('x')&&($('x').onclick=close);
+  $('doReset')&&($('doReset').onclick=()=>{S=blank();save();close();render()});
+  $('toReset')&&($('toReset').onclick=()=>openSettings(true));
+  const f=$('setForm');if(f)f.onsubmit=ev=>{ev.preventDefault();if(S.sample){const n=$('sName').value,st=$('sStart').value;S=blank();S.name=n.trim();S.start=st}else{S.name=$('sName').value.trim();S.start=$('sStart').value;if(S.done.opendate&&DATE_RE.test(S.start))S.done.opendate.date=S.start}save();close();render()};
+}
+$('shopname').onclick=()=>openSettings(false);
+$('resetBtn').onclick=()=>openSettings(true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+render();
+</script>
+
 </body>
 </html>
