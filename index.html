@@ -6,7 +6,26 @@
 <title>ひとり商店。</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="css/style.css">
+<!--
+  Cache busting: GitHub Pages lets phones keep CSS/JS for a while, so a new page could run with
+  old scripts. Every file is loaded with ?v=APP_VERSION. When releasing, change APP_VERSION only.
+-->
+<script>
+  (() => {
+    const APP_VERSION = '2026-10-06.3';
+    const MODULES = ['app', 'auth', 'config', 'events', 'logic', 'state', 'store'];
+    const imports = {};
+    for (const m of MODULES) {
+      const url = new URL('js/' + m + '.js', location.href).href;
+      imports[url] = url + '?v=' + APP_VERSION;
+    }
+    const map = document.createElement('script');
+    map.type = 'importmap';
+    map.textContent = JSON.stringify({ imports });
+    document.currentScript.after(map);
+    document.write('<link rel="stylesheet" href="css/style.css?v=' + APP_VERSION + '">');
+  })();
+</script>
 </head>
 <body>
 
@@ -331,6 +350,7 @@
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script type="module" src="js/app.js"></script>
+<!-- Imported (not src=) so the import map above adds the version to app.js too. -->
+<script type="module">import './js/app.js';</script>
 </body>
 </html>
