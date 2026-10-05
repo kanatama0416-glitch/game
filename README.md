@@ -21,14 +21,17 @@
 - `js/logic.js`：日付・期限・進み具合・お金の計算（画面や保存に依存しない）
 - `js/state.js`：記録の追加・修正・削除などの状態の変更
 - `js/store.js`：保存（この端末 / Supabase）
-- `js/auth.js`：メールのリンクでのログイン
+- `js/auth.js`：メールアドレスとパスワードでのログイン（家計簿と同じ方式）
+- `js/gate.js`：入口の画面（ログイン、初回のパスワード設定、パスワードの再設定）
 - `js/app.js`：画面の表示と操作
 - `tests/`：単体テスト（Supabase の代わりの模擬環境つき）
 
-## データの保存
+## データの保存とログイン
 
-- ログインしていないとき：ブラウザの localStorage（キー `hitori-shoten-v1`）に保存。この端末だけ
-- ログインしているとき：Supabase（プロジェクト hitori-shoten）に保存。テーブルは `shops` `records` `months` `skips`。行レベルセキュリティで、本人の行だけ読み書きできる
+- 家計簿と同じ Supabase プロジェクト（kakeibo）を使う。同じサイトなので、どちらかでログインすればもう片方にもそのまま入れる
+- テーブルは `nyachimaru_shops` `nyachimaru_records` `nyachimaru_months` `nyachimaru_skips`。作成 SQL は `supabase/migrations/`
+- 入れるのは `private.nyachimaru_allowed_users` にあるメールアドレスだけ。行レベルセキュリティで「本人の行」かつ「許可リストにある人」だけ読み書きできる
+- 許可するメールアドレスを増やすときは、Supabase の SQL で `insert into private.nyachimaru_allowed_users (email) values ('...');`（小文字で）
 - ブラウザに置いてよい publishable key だけを `js/config.js` に書く。secret key は置かない
 
 ## 更新するとき
@@ -37,4 +40,4 @@
 
 ## テスト
 
-`npm test`（Node.js 22 以降）
+`npm test`（Node.js 22 以降）。Supabase の代わりの模擬環境（`tests/fake-supabase.js`）で、許可リストと本人の行だけ触れることも確かめる

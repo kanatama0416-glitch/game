@@ -1,6 +1,6 @@
 // Screen: rendering, sheets and event handlers. Data changes go through state.js,
 // saving goes through store.js. This file never talks to localStorage or Supabase directly.
-import { EVENTS, CHAPTERS, CHAPTER_SCENES, ROOM_NAMES, BYK, sampleState } from './events.js';
+import { EVENTS, CHAPTERS, CHAPTER_SCENES, ROOM_NAMES, BYK } from './events.js';
 import {
   DATE_RE, MONTH_RE, todayStr, fmtDate, fmtMonth, dayLabel, headerDays,
   deadlineOf, dueText, dueClass, pendingEvents, curChapter, totals, parseYen,
@@ -8,6 +8,7 @@ import {
 import * as st from './state.js';
 import { createLocalStore, createRemoteStore } from './store.js';
 import { createAuth } from './auth.js';
+import { createGate } from './gate.js';
 import { SUPABASE_URL, SUPABASE_KEY, LOCAL_KEY } from './config.js';
 
 // ---------- small helpers ----------
@@ -28,8 +29,9 @@ function safeStorage() {
 
 // ---------- app state ----------
 const local = createLocalStore(safeStorage(), LOCAL_KEY);
-let S = local.load() || sampleState();
-let store = local;
+let S = st.emptyState();
+let store = null;                // set after login; nothing is shown before that
+let gate = null;
 let auth = null, user = null;
 const fresh = new Set();          // records to flash once in the history
 const cheerQueue = [];            // celebrations waiting for the current sheet to close: event key or {chapter}
@@ -41,6 +43,7 @@ async function commit(ops) {
   auto.added.forEach(k => fresh.add(k));
   render();
   if (auto.added.length) queueCheer(auto.added);
+  if (!store) return; // not logged in: the app is hidden, nothing to save
   try { await store.apply(S, [...ops, ...auto.ops]); }
   catch (e) {
     if (store.kind === 'remote') {
@@ -49,7 +52,6 @@ async function commit(ops) {
     } else toast(e.message);
   }
 }
-function leaveSampleIfNeeded() { if (S.sample) S = st.emptyState(); }
 
 // ---------- rendering ----------
 function shopName() { return S.name || 'わたしの商店'; }
@@ -61,7 +63,6 @@ function render() {
   $('days').innerHTML = headerDays(S, today);
   const c = curChapter(S);
   $('chapter').textContent = '第' + (c + 1) + '章 ' + CHAPTERS[c];
-  $('sampleBar').hidden = !S.sample;
   const t = totals(S);
   $('sSales').textContent = $('mSalesT').textContent = yen(t.s);
   $('sExp').textContent = $('mExpT').textContent = yen(t.e);
@@ -128,8 +129,7 @@ function renderSettings() {
   const ks = Object.keys(S.skip).filter(k => BYK[k]);
   $('skippedBox').innerHTML = ks.length ? `<h2>関係ないにした出来事</h2><div class="month"><div class="check">${ks.map(k => `<div><span>${esc(BYK[k].t)}</span><button type="button" class="linkbtn" data-unskip="${k}">戻す</button></div>`).join('')}</div></div>` : '';
   document.querySelectorAll('[data-unskip]').forEach(b => { b.onclick = () => commit(st.unskipEvent(S, b.dataset.unskip)); });
-  $('resetLead').textContent = S.sample ? 'いま表示しているのは見本です。消すと、まっさらな状態から始められます。'
-    : user ? 'クラウドに保存した記録と数字をすべて消します。元には戻せません。' : 'この端末の記録と数字をすべて消します。元には戻せません。';
+  $('resetLead').textContent = 'にゃちまる商店の記録と数字をすべて消します。元には戻せません。家計簿のデータは消えません。';
 }
 
 // ---------- tabs ----------
@@ -156,16 +156,11 @@ function historyRow(k, v) {
 
 function renderAccount() {
   const el = $('account');
-  if (!auth) { el.innerHTML = '<p>記録はこの端末だけに保存しています。<br>ログイン機能を読み込めなかったので、通信を確認してページを開き直してね。</p>'; return; }
-  if (!user) {
-    el.innerHTML = '<p>記録はこの端末だけに保存しています。ログインすると、スマホとPCで同じ記録を使えます。</p><button class="btn ghost" id="loginBtn">ログイン</button>';
-    $('loginBtn').onclick = () => openLogin();
-    return;
-  }
-  el.innerHTML = `<p><b>${esc(user.email)}</b> でログイン中。記録はクラウドに保存しています。</p><button class="btn ghost" id="logoutBtn">ログアウト</button>`;
+  if (!user) { el.innerHTML = ''; return; }
+  el.innerHTML = `<p><b>${esc(user.email)}</b> でログイン中。家計簿と同じアカウントです。<br>ログアウトすると、この端末の家計簿からもログアウトします。</p><button class="btn ghost" id="logoutBtn">ログアウト</button>`;
   $('logoutBtn').onclick = async () => {
     try { await auth.signOut(); } catch { toast('ログアウトできませんでした。もう一度試してね。'); return; }
-    enterLocal();
+    leave('ログアウトしました。');
   };
 }
 
@@ -219,7 +214,7 @@ function openEvent(k, step = 0) {
     <div class="acts"><button type="button" class="btn ghost" id="bk">戻る</button><button class="btn" type="submit">記録する</button></div></form>`;
   sheet(`<div class="sheeticon" aria-hidden="true">${e.ic}</div><h3>${esc(e.t)}</h3><div class="steps">${steps}</div>${body}`);
   $('x') && ($('x').onclick = close);
-  $('skip') && ($('skip').onclick = () => { leaveSampleIfNeeded(); const ops = st.skipEvent(S, k); close(); commit(ops); });
+  $('skip') && ($('skip').onclick = () => { const ops = st.skipEvent(S, k); close(); commit(ops); });
   $('unskip') && ($('unskip').onclick = () => { const ops = st.unskipEvent(S, k); close(); commit(ops); });
   $('nx') && ($('nx').onclick = () => openEvent(k, step + 1));
   $('bk') && ($('bk').onclick = () => openEvent(k, step - 1));
@@ -227,7 +222,6 @@ function openEvent(k, step = 0) {
   if (f) f.onsubmit = ev => {
     ev.preventDefault();
     const r = readRecordForm(k); if (r.err) return showErr('fErr', r.err);
-    leaveSampleIfNeeded();
     const ops = st.applyRecord(S, k, r.rec, r.extra);
     fresh.add(k);
     $('layer').innerHTML = '';
@@ -294,7 +288,7 @@ function openNow() {
 }
 
 function openReset() {
-  const warn = S.sample ? 'いま表示している見本の記録と数字はすべて消えます。' : (user ? 'クラウドに保存した記録と数字がすべて消えます。元には戻せません。' : 'この端末の記録と数字がすべて消えます。元には戻せません。');
+  const warn = 'にゃちまる商店の記録と数字がすべて消えます。元には戻せません。家計簿のデータは消えません。';
   sheet(`<h3>まっさらから始めますか？</h3><p class="warn">${warn}</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`);
   $('x').onclick = close;
   $('doReset').onclick = () => { const ops = st.resetAll(S); close(); commit(ops); showTab('home'); };
@@ -304,7 +298,6 @@ $('setForm').onsubmit = ev => {
   const name = $('sName').value.trim().slice(0, 20), start = $('sStart').value;
   if (start && !DATE_RE.test(start)) return showErr('sErr', '開業日を正しく入れてください。');
   $('sErr').hidden = true;
-  leaveSampleIfNeeded();
   document.activeElement.blur();
   commit(st.setShop(S, name, start));
   toast('保存しました。');
@@ -337,27 +330,6 @@ function showChapterCheer(c) {
   $('ok').onclick = () => { close(); showTab('home'); };
 }
 
-// ---------- login ----------
-function openLogin(sent) {
-  if (sent) {
-    sheet(`<h3>メールを送りました</h3><p>届いたメールのリンクを、この端末で開いてね。開くとログインできます。</p><div class="acts"><button class="btn" id="x">閉じる</button></div>`);
-    $('x').onclick = close; return;
-  }
-  sheet(`<h3>ログイン</h3><p class="warn">メールアドレスにログイン用のリンクを送ります。パスワードはいりません。</p>
-    <form id="loginForm" novalidate class="sheetform"><div class="field"><label for="lEmail">メールアドレス</label><input type="email" id="lEmail" autocomplete="email" required></div>
-    <p class="err" id="fErr" hidden></p>
-    <div class="acts"><button type="button" class="btn ghost" id="x">キャンセル</button><button class="btn" type="submit" id="sendBtn">リンクを送る</button></div></form>`);
-  $('x').onclick = close;
-  $('loginForm').onsubmit = async ev => {
-    ev.preventDefault();
-    const email = $('lEmail').value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('fErr', 'メールアドレスを正しく入れてください。');
-    $('sendBtn').disabled = true;
-    try { await auth.sendLink(email, location.origin + location.pathname); openLogin(true); }
-    catch { $('sendBtn').disabled = false; showErr('fErr', '送れませんでした。少し時間をおいて、もう一度試してね。'); }
-  };
-}
-
 // Moving this device's records to a new account (only when the account is still empty).
 function offerImport(localState) {
   sheet(`<h3>この端末の記録を移しますか？</h3><p>この端末に保存している記録を、ログインしたアカウントに移します。移すと、スマホとPCで同じ記録を使えます。</p>
@@ -372,10 +344,11 @@ function offerImport(localState) {
 }
 
 // ---------- modes ----------
-function enterLocal() {
-  user = null; store = local; lastChapter = null;
-  S = local.load() || sampleState();
-  render();
+// Back to the entrance (logout, session ended).
+function leave(text) {
+  user = null; store = null; lastChapter = null;
+  S = st.emptyState(); render();
+  if (gate) gate.show('login', text ?? '', true);
 }
 async function enterRemote(u) {
   user = u; store = createRemoteStore(auth.client, u.id);
@@ -403,7 +376,6 @@ $('monthForm').onsubmit = ev => {
   if (!MONTH_RE.test(m)) return showErr('mErr', '月を選んでください。');
   if (Number.isNaN(s) || Number.isNaN(x)) return showErr('mErr', '金額は0以上の整数で入れてください。');
   $('mErr').hidden = true;
-  leaveSampleIfNeeded();
   const ops = st.setMonth(S, m, { s, e: x });
   $('mSales').value = ''; $('mExp').value = '';
   commit(ops);
@@ -411,7 +383,6 @@ $('monthForm').onsubmit = ev => {
 $('mMonth').value = todayStr().slice(0, 7);
 $('nowBtn').onclick = openNow;
 $('shopname').onclick = () => showTab('settings');
-$('resetBtn').onclick = openReset;
 $('toReset').onclick = openReset;
 document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
 document.querySelectorAll('[data-go]').forEach(b => { b.onclick = () => showTab(b.dataset.go); });
@@ -427,14 +398,24 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('cele')
 async function start() {
   render();
   auth = createAuth(window.supabase, SUPABASE_URL, SUPABASE_KEY);
-  if (!auth) { render(); return; }
+  gate = auth && createGate({ $, auth, onAllowed: enterRemote });
+  if (!auth) {
+    // Without the login library nothing can be shown safely; keep the entrance up.
+    $('gate').hidden = false; $('app').hidden = true;
+    $('gateMsg').textContent = 'ログイン機能を読み込めませんでした。通信を確認して、ページを開き直してね。';
+    document.querySelectorAll('#gate button').forEach(b => { b.disabled = true; });
+    return;
+  }
+  const recovery = /(?:[?#&])type=recovery(?:[&#]|$)/.test(location.hash + location.search);
+  auth.onChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') gate.show('recovery', '新しいパスワードを設定してね。');
+    if (event === 'SIGNED_OUT' && user) leave('ログアウトしました。');
+  });
   let session = null;
   try { session = await auth.session(); } catch { /* treated as logged out */ }
-  auth.onChange((event, s) => {
-    if (event === 'SIGNED_IN' && s && (!user || user.id !== s.user.id)) enterRemote(s.user);
-    if (event === 'SIGNED_OUT' && user) enterLocal();
-  });
-  if (session) await enterRemote(session.user); else render();
+  if (session && recovery) gate.show('recovery', '新しいパスワードを設定してね。');
+  else if (session) await gate.admit(session);
+  else gate.show('login');
 }
 start();
 

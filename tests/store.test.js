@@ -5,9 +5,10 @@ import * as st from '../js/state.js';
 import { createFakeSupabase, createFakeDb } from './fake-supabase.js';
 
 const session = id => ({ user: { id, email: id + '@example.com' } });
+const allowed = ['u1@example.com', 'u2@example.com'];
 
 test('remote store saves every kind of change and loads it back', async () => {
-  const fake = createFakeSupabase({ session: session('u1') });
+  const fake = createFakeSupabase({ session: session('u1'), allowed });
   const store = createRemoteStore(fake.client, 'u1');
   const S = st.emptyState();
   await store.apply(S, st.applyRecord(S, 'yago', { date: '2026-10-01', memo: 'メモ' }, { name: 'たま商店' }));
@@ -20,7 +21,7 @@ test('remote store saves every kind of change and loads it back', async () => {
 });
 
 test('remote store deletes', async () => {
-  const fake = createFakeSupabase({ session: session('u1') });
+  const fake = createFakeSupabase({ session: session('u1'), allowed });
   const store = createRemoteStore(fake.client, 'u1');
   const S = st.emptyState();
   await store.apply(S, [...st.applyRecord(S, 'opendate', { date: '2026-10-20' }), ...st.setMonth(S, '2026-10', { s: 1, e: 0 }), ...st.skipEvent(S, 'ideco')]);
@@ -33,19 +34,19 @@ test('remote store deletes', async () => {
 
 test('another user cannot see or overwrite my rows', async () => {
   const db = createFakeDb();
-  const mine = createRemoteStore(createFakeSupabase({ db, session: session('u1') }).client, 'u1');
+  const mine = createRemoteStore(createFakeSupabase({ db, session: session('u1'), allowed }).client, 'u1');
   const S = st.emptyState();
   await mine.apply(S, st.applyRecord(S, 'yago', { date: '2026-10-01' }, { name: '私の店' }));
-  const otherClient = createFakeSupabase({ db, session: session('u2') }).client;
+  const otherClient = createFakeSupabase({ db, session: session('u2'), allowed }).client;
   const theirView = await createRemoteStore(otherClient, 'u2').load();
   assert.deepEqual(theirView, st.emptyState());
   // Pretending to be u1 while logged in as u2 is refused.
   await assert.rejects(createRemoteStore(otherClient, 'u1').apply(S, [{ t: 'shop' }]));
-  assert.equal(db.shops[0].name, '私の店');
+  assert.equal(db.nyachimaru_shops[0].name, '私の店');
 });
 
 test('remote errors are thrown so the screen can report them', async () => {
-  const fake = createFakeSupabase({ session: session('u1'), fail: { count: 1 } });
+  const fake = createFakeSupabase({ session: session('u1'), fail: { count: 1 }, allowed });
   const store = createRemoteStore(fake.client, 'u1');
   const S = st.emptyState();
   await assert.rejects(store.apply(S, st.setMonth(S, '2026-10', { s: 1, e: 0 })), /network/);
@@ -64,4 +65,12 @@ test('local store round-trips and survives broken data', async () => {
   // Data saved before "skip" existed still loads.
   m.set('k', JSON.stringify({ sample: false, name: '旧', start: '', done: {}, months: {} }));
   assert.equal(store.load().name, '旧');
+});
+
+test('a logged-in user who is not on the allowlist sees and saves nothing', async () => {
+  const db = createFakeDb();
+  const outsider = createRemoteStore(createFakeSupabase({ db, session: session('x'), allowed }).client, 'x');
+  const S = st.emptyState();
+  await assert.rejects(outsider.apply(S, st.setMonth(S, '2026-10', { s: 1, e: 0 })), /row-level security/);
+  assert.deepEqual(await outsider.load(), st.emptyState());
 });

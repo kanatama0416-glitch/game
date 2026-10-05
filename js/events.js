@@ -105,11 +105,3 @@ export const CHAPTER_SCENES=[
   '階段ができて、2階へ続いています。',
 ];
 export const BYK=Object.fromEntries(EVENTS.map(e=>[e.k,e]));
-
-// Example data shown before the first record (logged-out only).
-export function sampleState(){return{sample:true,skip:{},name:'かな商店',start:'2026-09-02',
-  done:{taishoku:{date:'2026-08-15',memo:'最後の日、チームのみんなに花束をもらった。'},nenkin:{date:'2026-08-19'},kenpo:{date:'2026-08-19',memo:'保険料を比べて国保にした。'},
-        koyo:{date:'2026-08-25'},gensen:{date:'2026-09-12'},joken:{date:'2026-09-08',memo:'メールで条件をまとめてもらった。'},kenzei:{date:'2026-09-10'},yago:{date:'2026-08-20',memo:'いろいろ悩んで、結局いちばん素直な名前に。'},opendate:{date:'2026-08-22'},software:{date:'2026-08-28'},
-        kaigyo:{date:'2026-09-02',memo:'税務署まで歩いて出しにいった。'},aoiro:{date:'2026-09-02'},expense:{date:'2026-09-10',amount:3200},
-        invoice:{date:'2026-09-20',amount:50000,memo:'研修資料づくりの仕事。'},payment:{date:'2026-09-30',amount:50000},sales10:{date:'2026-10-04'}},
-  months:{'2026-09':{s:80000,e:21000},'2026-10':{s:48400,e:11100}}}}
