@@ -10,7 +10,8 @@
 </head>
 <body>
 
-<div class="wrap">
+<main class="wrap">
+<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">
   <header style="display:flex;flex-direction:column;gap:6px">
     <div class="top">
       <div>
@@ -199,10 +200,25 @@
   <section>
     <h2>次の出来事 <small>タップすると「なぜ→どうやる→できた」まで進めます</small></h2>
     <div class="events" id="events"></div>
+    <button class="linkbtn more" data-go="tasks">やることを全部見る</button>
   </section>
+</section>
 
+<section class="panel" id="tab-tasks" role="tabpanel" aria-labelledby="t-tasks" hidden>
+  <h1 class="ptitle">やること</h1>
+  <p class="plead" id="tasksLead"></p>
+  <div id="tasks"></div>
+</section>
+
+<section class="panel" id="tab-money" role="tabpanel" aria-labelledby="t-money" hidden>
+  <h1 class="ptitle">お金</h1>
+  <div class="stats">
+    <div class="stat"><small>累計売上</small><span class="num" id="mSalesT"></span></div>
+    <div class="stat"><small>累計経費</small><span class="num" id="mExpT"></span></div>
+    <div class="stat profit"><small>利益</small><span class="num" id="mProfitT"></span></div>
+  </div>
   <section>
-    <h2>今月のお金 <small>月に1回だけ入れればOK</small></h2>
+    <h2>月のお金を記録 <small>月に1回だけ入れればOK。同じ月を入れると上書き</small></h2>
     <form class="month" id="monthForm" novalidate>
       <div class="row">
         <div class="field"><label for="mMonth">月</label><input type="month" id="mMonth" required></div>
@@ -211,16 +227,49 @@
         <button class="btn" type="submit">記録</button>
       </div>
       <p class="err" id="mErr" hidden></p>
-      <div class="mlist" id="mlist"></div>
     </form>
   </section>
-
-  <section class="history">
-    <div class="hist-head">MY BUSINESS HISTORY<span class="hint">タップで直せます</span></div>
-    <div id="history"></div>
+  <section>
+    <h2>これまでの月 <small>タップで直せます</small></h2>
+    <div class="mlist" id="mlist"></div>
   </section>
-  <section class="account" id="account" aria-label="アカウント"></section>
-</div>
+</section>
+
+<section class="panel history" id="tab-history" role="tabpanel" aria-labelledby="t-history" hidden>
+  <div class="hist-head">MY BUSINESS HISTORY<span class="hint">タップで直せます</span></div>
+  <div id="history"></div>
+</section>
+
+<section class="panel" id="tab-settings" role="tabpanel" aria-labelledby="t-settings" hidden>
+  <h1 class="ptitle">設定</h1>
+  <section>
+    <h2>お店</h2>
+    <form id="setForm" class="month sheetform" novalidate>
+      <div class="field"><label for="sName">屋号</label><input id="sName" maxlength="20" placeholder="例：かな商店"></div>
+      <div class="field"><label for="sStart">開業日</label><input type="date" id="sStart"></div>
+      <p class="err" id="sErr" hidden></p>
+      <div class="acts"><button class="btn" type="submit">保存</button></div>
+    </form>
+  </section>
+  <section id="skippedBox"></section>
+  <section>
+    <h2>アカウント</h2>
+    <div class="account" id="account" aria-label="アカウント"></div>
+  </section>
+  <section>
+    <h2>記録を消す</h2>
+    <div class="account"><p id="resetLead"></p><button class="btn ghost" id="toReset">すべての記録を消す</button></div>
+  </section>
+</section>
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="画面の切り替え">
+  <button role="tab" id="t-home" data-tab="home" aria-controls="tab-home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>ホーム</button>
+  <button role="tab" id="t-tasks" data-tab="tasks" aria-controls="tab-tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>やること</button>
+  <button role="tab" id="t-money" data-tab="money" aria-controls="tab-money"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 7l4 5 4-5M12 12v6M8.5 13.5h7M8.5 16h7"/></svg>お金</button>
+  <button role="tab" id="t-history" data-tab="history" aria-controls="tab-history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>年表</button>
+  <button role="tab" id="t-settings" data-tab="settings" aria-controls="tab-settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>設定</button>
+</nav>
 
 <div id="layer"></div>
 <div class="toast" id="toast" role="status" hidden></div>

@@ -42,6 +42,7 @@ export function applyRecord(S, k, rec, extra) {
   const ops = [{ t: 'record', k }];
   if (k === 'yago' && extra && extra.name != null) { S.name = extra.name; ops.push({ t: 'shop' }); }
   if (k === 'opendate') { S.start = rec.date; ops.push({ t: 'shop' }); }
+  if (S.skip[k]) { delete S.skip[k]; ops.push({ t: 'skip', k }); } // recording it means it applies after all
   S.done[k] = rec;
   return ops;
 }

@@ -61,7 +61,10 @@ function render() {
   const c = curChapter(S);
   $('chapter').textContent = '第' + (c + 1) + '章 ' + CHAPTERS[c];
   $('sampleBar').hidden = !S.sample;
-  const t = totals(S); $('sSales').textContent = yen(t.s); $('sExp').textContent = yen(t.e); $('sProfit').textContent = yen(t.p);
+  const t = totals(S);
+  $('sSales').textContent = $('mSalesT').textContent = yen(t.s);
+  $('sExp').textContent = $('mExpT').textContent = yen(t.e);
+  $('sProfit').textContent = $('mProfitT').textContent = yen(t.p);
   // data-k: shown when that event is done; data-any: shown when any of the listed events is done.
   document.querySelectorAll('.it').forEach(g => g.classList.toggle('on', (g.dataset.any || g.dataset.k).split(' ').some(k => S.done[k])));
   const cnt = Object.keys(S.done).length;
@@ -72,14 +75,68 @@ function render() {
   $('events').querySelectorAll('.ev').forEach(b => { b.onclick = () => openEvent(b.dataset.k); });
 
   const ms = Object.keys(S.months).sort().reverse();
-  $('mlist').innerHTML = ms.map(m => `<div class="mrow" role="button" tabindex="0" data-m="${esc(m)}" aria-label="${esc(fmtMonth(m))}のお金を直す"><span class="num">${esc(fmtMonth(m))}</span><span class="num">売上 ${yen(S.months[m].s)} / 経費 ${yen(S.months[m].e)}</span></div>`).join('');
+  $('mlist').innerHTML = ms.length === 0 ? '<p class="empty">まだ記録した月はありません。上の欄から入れてね。</p>' : ms.map(m => `<div class="mrow" role="button" tabindex="0" data-m="${esc(m)}" aria-label="${esc(fmtMonth(m))}のお金を直す"><span class="num">${esc(fmtMonth(m))}</span><span class="num">売上 ${yen(S.months[m].s)} / 経費 ${yen(S.months[m].e)}</span></div>`).join('');
   bindTap($('mlist').querySelectorAll('.mrow'), el => openMonth(el.dataset.m));
 
   const hs = Object.entries(S.done).filter(([k]) => BYK[k]).sort((a, b) => a[1].date < b[1].date ? -1 : a[1].date > b[1].date ? 1 : 0);
   $('history').innerHTML = hs.length ? hs.map(([k, v]) => historyRow(k, v)).join('') : '<p class="empty">最初の出来事を記録すると、ここに年表ができていきます。</p>';
   bindTap($('history').querySelectorAll('.h'), el => openEdit(el.dataset.k));
   fresh.clear();
+  renderTasks(today);
+  renderSettings();
   renderAccount();
+}
+
+// やること: every event, grouped by chapter. The current chapter starts open.
+function renderTasks(today) {
+  const cur = curChapter(S);
+  const manual = EVENTS.filter(e => !e.auto && !S.skip[e.k]);
+  const doneCount = manual.filter(e => S.done[e.k]).length;
+  $('tasksLead').textContent = `${manual.length}個のうち${doneCount}個が済みました。タップで説明や記録を開けます。`;
+  $('tasks').innerHTML = CHAPTERS.map((name, c) => {
+    const evs = EVENTS.filter(e => e.ch === c);
+    const counted = evs.filter(e => !e.auto && !S.skip[e.k]);
+    const n = counted.filter(e => S.done[e.k]).length;
+    const pct = counted.length ? Math.round(n / counted.length * 100) : 100;
+    return `<details class="chap${c === cur ? ' cur' : ''}"${c === cur ? ' open' : ''}>
+      <summary><span class="chap-no">第${c + 1}章</span><span class="chap-name">${esc(name)}</span><span class="chap-count">${n} / ${counted.length}</span><span class="bar"><i style="width:${pct}%"></i></span></summary>
+      <div class="tasklist">${evs.map(e => taskRow(e, today)).join('')}</div></details>`;
+  }).join('');
+  bindTap($('tasks').querySelectorAll('button.task'), el => (S.done[el.dataset.k] ? openEdit : openEvent)(el.dataset.k));
+}
+function taskRow(e, today) {
+  const v = S.done[e.k];
+  if (v) {
+    const label = dayLabel(S, v.date);
+    return `<button class="task st-done" data-k="${e.k}"><span class="ic" aria-hidden="true">${e.ic}</span><span class="tt"><span class="t">${esc(e.t)}</span><span class="s">${fmtDate(v.date)}${label ? '　' + label : ''}</span></span><span class="mark">✓</span></button>`;
+  }
+  if (e.auto) return `<div class="task st-auto"><span class="ic" aria-hidden="true">${e.ic}</span><span class="tt"><span class="t">${esc(e.t)}</span><span class="s">月のお金を入れると自動で記録</span></span><span class="mark">自動</span></div>`;
+  if (S.skip[e.k]) return `<button class="task st-skip" data-k="${e.k}"><span class="ic" aria-hidden="true">${e.ic}</span><span class="tt"><span class="t">${esc(e.t)}</span><span class="s">関係ないにした出来事</span></span><span class="mark">対象外</span></button>`;
+  const dl = deadlineOf(S, e.k, today);
+  const sub = dl ? `<span class="${dueClass(dl)}">${esc(dueText(dl))}</span>` : (e.opt ? `<span class="s">${esc(e.opt)}</span>` : '');
+  return `<button class="task st-todo" data-k="${e.k}"><span class="ic" aria-hidden="true">${e.ic}</span><span class="tt"><span class="t">${esc(e.t)}</span>${sub}</span><span class="mark">›</span></button>`;
+}
+
+// 設定: fills the shop form unless the user is typing in it.
+function renderSettings() {
+  if (!$('setForm').contains(document.activeElement)) { $('sName').value = S.name; $('sStart').value = S.start; }
+  const ks = Object.keys(S.skip).filter(k => BYK[k]);
+  $('skippedBox').innerHTML = ks.length ? `<h2>関係ないにした出来事</h2><div class="month"><div class="check">${ks.map(k => `<div><span>${esc(BYK[k].t)}</span><button type="button" class="linkbtn" data-unskip="${k}">戻す</button></div>`).join('')}</div></div>` : '';
+  document.querySelectorAll('[data-unskip]').forEach(b => { b.onclick = () => commit(st.unskipEvent(S, b.dataset.unskip)); });
+  $('resetLead').textContent = S.sample ? 'いま表示しているのは見本です。消すと、まっさらな状態から始められます。'
+    : user ? 'クラウドに保存した記録と数字をすべて消します。元には戻せません。' : 'この端末の記録と数字をすべて消します。元には戻せません。';
+}
+
+// ---------- tabs ----------
+const TABS = ['home', 'tasks', 'money', 'history', 'settings'];
+function showTab(name) {
+  if (!TABS.includes(name)) name = 'home';
+  for (const t of TABS) {
+    $('tab-' + t).hidden = t !== name;
+    $('t-' + t).setAttribute('aria-selected', String(t === name));
+    $('t-' + t).tabIndex = t === name ? 0 : -1;
+  }
+  window.scrollTo(0, 0);
 }
 
 function evCard(e, today) {
@@ -147,8 +204,8 @@ function openEvent(k, step = 0) {
   const steps = ['なぜ必要？', 'どうやる？', 'できた！'].map((s, i) => `<span class="${i === step ? 'cur' : i < step ? 'done' : ''}">${s}</span>`).join('');
   const dl = deadlineOf(S, k, todayStr());
   const dueBox = dl ? `<div class="duebox"><span class="${dueClass(dl)}">${esc(dueText(dl))}</span><small>${esc(dl.note)}。日付は目安なので、正確な期限は窓口の案内で確認してね。</small></div>` : '';
-  const optNote = e.opt ? `<p class="warn">${esc(e.opt)}の出来事です。</p>` : '';
-  const skipBtn = e.opt ? '<button class="btn ghost left" id="skip">自分には関係ない</button>' : '';
+  const optNote = S.skip[k] ? '<p class="warn">関係ないにした出来事です。記録すると、対象に戻ります。</p>' : e.opt ? `<p class="warn">${esc(e.opt)}の出来事です。</p>` : '';
+  const skipBtn = S.skip[k] ? '<button class="btn ghost left" id="unskip">対象に戻す</button>' : e.opt ? '<button class="btn ghost left" id="skip">自分には関係ない</button>' : '';
   let body = '';
   if (step === 0) body = `<p>${esc(e.why)}</p>${optNote}${dueBox}<div class="acts">${skipBtn}<button class="btn ghost" id="x">あとで</button><button class="btn" id="nx">どうやる？</button></div>`;
   if (step === 1) body = `<ul>${e.how.map(h => `<li>${esc(h)}</li>`).join('')}</ul><div class="acts"><button class="btn ghost" id="bk">戻る</button><button class="btn" id="nx">できた！</button></div>`;
@@ -158,6 +215,7 @@ function openEvent(k, step = 0) {
   sheet(`<div class="sheeticon" aria-hidden="true">${e.ic}</div><h3>${esc(e.t)}</h3><div class="steps">${steps}</div>${body}`);
   $('x') && ($('x').onclick = close);
   $('skip') && ($('skip').onclick = () => { leaveSampleIfNeeded(); const ops = st.skipEvent(S, k); close(); commit(ops); });
+  $('unskip') && ($('unskip').onclick = () => { const ops = st.unskipEvent(S, k); close(); commit(ops); });
   $('nx') && ($('nx').onclick = () => openEvent(k, step + 1));
   $('bk') && ($('bk').onclick = () => openEvent(k, step - 1));
   const f = $('doneForm');
@@ -230,35 +288,22 @@ function openNow() {
   $('x').onclick = close; $('go') && ($('go').onclick = () => openEvent(next.k));
 }
 
-function skippedList() {
-  const ks = Object.keys(S.skip).filter(k => BYK[k]);
-  if (!ks.length) return '';
-  return `<div class="field"><label>関係ないにした出来事</label><div class="check">${ks.map(k => `<div><span>${esc(BYK[k].t)}</span><button type="button" class="linkbtn" data-unskip="${k}">戻す</button></div>`).join('')}</div></div>`;
+function openReset() {
+  const warn = S.sample ? 'いま表示している見本の記録と数字はすべて消えます。' : (user ? 'クラウドに保存した記録と数字がすべて消えます。元には戻せません。' : 'この端末の記録と数字がすべて消えます。元には戻せません。');
+  sheet(`<h3>まっさらから始めますか？</h3><p class="warn">${warn}</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`);
+  $('x').onclick = close;
+  $('doReset').onclick = () => { const ops = st.resetAll(S); close(); commit(ops); showTab('home'); };
 }
-function openSettings(confirmReset) {
-  if (confirmReset) {
-    const warn = S.sample ? 'いま表示している見本の記録と数字はすべて消えます。' : (user ? 'クラウドに保存した記録と数字がすべて消えます。元には戻せません。' : 'この端末の記録と数字がすべて消えます。元には戻せません。');
-    sheet(`<h3>まっさらから始めますか？</h3><p class="warn">${warn}</p><div class="acts"><button class="btn ghost" id="x">やめる</button><button class="btn" id="doReset">まっさらにする</button></div>`);
-    $('x').onclick = close;
-    $('doReset').onclick = () => { const ops = st.resetAll(S); close(); commit(ops); };
-    return;
-  }
-  sheet(`<h3>お店の設定</h3><form id="setForm" novalidate class="sheetform">
-   <div class="field"><label for="sName">屋号</label><input id="sName" maxlength="20" value="${esc(S.name)}" placeholder="例：かな商店"></div>
-   <div class="field"><label for="sStart">開業日</label><input type="date" id="sStart" value="${esc(S.start)}"></div>
-   ${skippedList()}
-   <p class="err" id="fErr" hidden></p>
-   <div class="acts"><button type="button" class="btn ghost left" id="toReset">すべての記録を消す</button><button class="btn" type="submit">保存</button></div></form>`);
-  $('toReset').onclick = () => openSettings(true);
-  document.querySelectorAll('[data-unskip]').forEach(b => { b.onclick = () => { const ops = st.unskipEvent(S, b.dataset.unskip); commit(ops); openSettings(false); }; });
-  $('setForm').onsubmit = ev => {
-    ev.preventDefault();
-    const name = $('sName').value.trim().slice(0, 20), start = $('sStart').value;
-    if (start && !DATE_RE.test(start)) return showErr('fErr', '開業日を正しく入れてください。');
-    leaveSampleIfNeeded();
-    const ops = st.setShop(S, name, start); close(); commit(ops);
-  };
-}
+$('setForm').onsubmit = ev => {
+  ev.preventDefault();
+  const name = $('sName').value.trim().slice(0, 20), start = $('sStart').value;
+  if (start && !DATE_RE.test(start)) return showErr('sErr', '開業日を正しく入れてください。');
+  $('sErr').hidden = true;
+  leaveSampleIfNeeded();
+  document.activeElement.blur();
+  commit(st.setShop(S, name, start));
+  toast('保存しました。');
+};
 
 // ---------- celebrations ----------
 function queueCheer(keys) { cheerQueue.push(...keys); if (!$('layer').innerHTML) showNextCheer(); }
@@ -349,8 +394,18 @@ $('monthForm').onsubmit = ev => {
 };
 $('mMonth').value = todayStr().slice(0, 7);
 $('nowBtn').onclick = openNow;
-$('shopname').onclick = () => openSettings(false);
-$('resetBtn').onclick = () => openSettings(true);
+$('shopname').onclick = () => showTab('settings');
+$('resetBtn').onclick = openReset;
+$('toReset').onclick = openReset;
+document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
+document.querySelectorAll('[data-go]').forEach(b => { b.onclick = () => showTab(b.dataset.go); });
+// Arrow keys move between tabs (standard tablist behavior).
+$('t-home').parentElement.addEventListener('keydown', e => {
+  const i = TABS.findIndex(t => $('t-' + t).getAttribute('aria-selected') === 'true');
+  const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+  const next = TABS[(i + d + TABS.length) % TABS.length]; showTab(next); $('t-' + next).focus();
+});
+showTab('home');
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('cele')) close(); });
 
 async function start() {

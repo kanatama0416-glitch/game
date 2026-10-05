@@ -57,3 +57,10 @@ test('hasUserData ignores the sample', () => {
   S.name = 'a'; assert.equal(st.hasUserData(S), true);
   S.sample = true; assert.equal(st.hasUserData(S), false);
 });
+
+test('recording a 関係ない event brings it back', () => {
+  const S = st.emptyState(); st.skipEvent(S, 'ideco');
+  const ops = st.applyRecord(S, 'ideco', { date: '2026-10-01' });
+  assert.equal(S.skip.ideco, undefined);
+  assert.deepEqual(ops, [{ t: 'record', k: 'ideco' }, { t: 'skip', k: 'ideco' }]);
+});
