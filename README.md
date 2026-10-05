@@ -13,11 +13,23 @@
 
 ## 構成
 
-`index.html` 1ファイルで動く静的ページ。
+静的サイト（GitHub Pages）。ビルドは不要。
+
+- `index.html`：画面の骨組みと部屋のイラスト
+- `css/style.css`：見た目
+- `js/events.js`：出来事・章・部屋の場面のデータ
+- `js/logic.js`：日付・期限・進み具合・お金の計算（画面や保存に依存しない）
+- `js/state.js`：記録の追加・修正・削除などの状態の変更
+- `js/store.js`：保存（この端末 / Supabase）
+- `js/auth.js`：メールのリンクでのログイン
+- `js/app.js`：画面の表示と操作
+- `tests/`：単体テスト（Supabase の代わりの模擬環境つき）
 
 ## データの保存
 
-ブラウザの localStorage（キー `hitori-shoten-v1`）にだけ保存する。端末間の同期はなく、ブラウザのデータを消すと記録も消える。
+- ログインしていないとき：ブラウザの localStorage（キー `hitori-shoten-v1`）に保存。この端末だけ
+- ログインしているとき：Supabase（プロジェクト hitori-shoten）に保存。テーブルは `shops` `records` `months` `skips`。行レベルセキュリティで、本人の行だけ読み書きできる
+- ブラウザに置いてよい publishable key だけを `js/config.js` に書く。secret key は置かない
 
 ## 更新するとき
 
