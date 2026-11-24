@@ -97,7 +97,25 @@ function player(x,y,pose,flip=false,h=88*S){sprite(pose,x,y,h,flip)}
   rect(0,0,W,H,'#15132b');if(valid(im)){ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(im,-camera,top,drawW,900*scale);ctx.restore()}
  }
 function city(q,moving){const len=1100,wx=mix(70,len-65,q),c=cam(wx,len),x=(wx-c)*S;panorama('city',q*len,len,'road');const holeX=mix(W+200,W*.57,smooth((q-.70)/.30));if(q>.70)sprite('manhole',holeX,G+8*S,71*S);const px=q>.8?mix(x,holeX,smooth((q-.8)/.20)):x;const pose=moving?(Math.floor(q*54)%2?'walk':'run'):'idle';player(px,G-2,pose,(pose==='walk')!==(moving&&p<previous));if(q>.91)text('地下へ',holeX,G-102*S,16,'#ffde7a')}
-function shaft(q){rect(0,0,W,H,'#161128');const wall=I.wall,tw=valid(wall)?Math.max(90,W*.33):W,th=valid(wall)?tw*wall.naturalHeight/wall.naturalWidth:80;for(let y=-(q*500%th);y<H;y+=th)tile('wall',0,y,tw,th,W);rect(W*.30,0,W*.40,H,'#100c23');const shaftX=W*.5,ww=76*S;rect(shaftX-ww/2,0,6*S,H,'#af8050');rect(shaftX+ww/2,0,6*S,H,'#af8050');for(let y=-(q*640%(28*S));y<H;y+=28*S){rect(shaftX-ww/2,y,ww+6*S,5*S,'#e6b665');rect(shaftX-ww/2,y,ww+6*S,2*S,'#ffe0a2')}if(q<.15)sprite('manhole',shaftX,120-q*350,80*S);player(shaftX,H*.54,'jump',true,83*S);if(q>.78)text('地下闘技場',shaftX,H*.73,19,'#ffda86')}
+function shaft(q){
+ // Draw the descent at device resolution, with a continuous masonry shaft, pipes,
+ // recessed ladder and warm light towards the underground arena.
+ const sy=600*q,center=W*.5,opening=Math.min(W*.45,180*S),left=center-opening/2,right=center+opening/2;
+ const bg=ctx.createLinearGradient(0,0,W,0);bg.addColorStop(0,'#27233f');bg.addColorStop(.38,'#49375f');bg.addColorStop(.5,'#161124');bg.addColorStop(.64,'#423254');bg.addColorStop(1,'#231f39');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ ctx.save();
+ const bh=25*S,bw=55*S;for(let row=-1;row<H/bh+2;row++){const y=row*bh-(sy*S%bh),index=row+Math.floor(sy*S/bh);
+ for(let x=-bw;x<W+bw;x+=bw){const xx=x+(index%2)*bw*.5;const col=['#3a2d50','#433451','#393047','#4d3b61'][Math.floor(rand(index*97+x)*4)];rect(xx+1,y+1,bw-2,bh-2,col);rect(xx+2,y+2,bw-4,1.5*S,'#695678');rect(xx+2,y+bh-3*S,bw-4,2*S,'#231a36')}}
+ rect(left-9*S,0,opening+18*S,H,'#171227');rect(left-9*S,0,8*S,H,'#685477');rect(right+1*S,0,8*S,H,'#5e4d71');
+ const depth=ctx.createLinearGradient(left,0,right,0);depth.addColorStop(0,'#251e37');depth.addColorStop(.5,'#0e0c1b');depth.addColorStop(1,'#252035');ctx.fillStyle=depth;ctx.fillRect(left,0,opening,H);
+ for(const x of [left-26*S,right+26*S]){rect(x-5*S,0,10*S,H,'#211c34');rect(x-3*S,0,6*S,H,'#776682');rect(x-2*S,0,2*S,H,'#b195a9');for(let j=-1;j<H/(95*S)+1;j++){const y=j*95*S-sy*S%(95*S);rect(x-7*S,y,14*S,9*S,'#5a4b69');rect(x-7*S,y,14*S,2*S,'#a18ba6')}}
+ const ladder=Math.min(opening*.65,88*S);for(const x of [center-ladder/2,center+ladder/2]){rect(x-4*S,0,8*S,H,'#493149');rect(x-2*S,0,5*S,H,'#c18e54');rect(x-1*S,0,2*S,H,'#f4cc8d')}
+ for(let row=-1;row<H/(30*S)+2;row++){const y=row*30*S-sy*S%(30*S);rect(center-ladder/2,y,ladder,6*S,'#805438');rect(center-ladder/2,y,ladder,3*S,'#e6b46f')}
+ for(let i=-1;i<H/(190*S)+1;i++){const yy=i*190*S-sy*S%(190*S)+70*S;for(const xx of [left-47*S,right+47*S]){const glow=ctx.createRadialGradient(xx,yy,0,xx,yy,70*S);glow.addColorStop(0,'#ed995a55');glow.addColorStop(1,'#ed995a00');ctx.fillStyle=glow;ctx.fillRect(xx-70*S,yy-70*S,140*S,140*S);rect(xx-7*S,yy-10*S,14*S,20*S,'#211d33');rect(xx-4*S,yy-7*S,8*S,14*S,'#ffc77a')}}
+ ctx.restore();
+ if(q<.2)sprite('manhole',center,Math.max(-80*S,85*S-q*760*S),82*S);
+ player(center,H*.54,'jump',true,83*S);
+ if(q>.78){const glow=ctx.createLinearGradient(0,H*.75,0,H);glow.addColorStop(0,'#f29d5300');glow.addColorStop(1,'#ff9b5355');ctx.fillStyle=glow;ctx.fillRect(0,H*.75,W,H*.25);text('地下闘技場',center,H*.73,19,'#ffda86')}
+}
 function gate(){return gates.find(o=>o.hp>0)}function limit(){return gate()?.at??1}function arenaWorld(q){return 85+q*1440}function qFor(v){return clamp((v-SHAFT)/(ARENA-SHAFT))}
 function arena(moving,t){const q=qFor(p),wx=arenaWorld(q),c=cam(wx,1650),hx=(wx-c)*S;panorama('ring',q*1650,1650,'floor',null);for(const o of gates){if(!o.hp)continue;const x=(arenaWorld(qFor(o.at))+105-c)*S;if(x<-150||x>W+150)continue;sprite(o.type,x,G-1,(o.type==='shutter'?145:o.type==='barrel'?76:o.type==='crate'?68:100)*S);for(let j=0;j<o.hp;j++)rect(x-(o.hp*10*S)/2+j*10*S,G-(o.type==='shutter'?155:111)*S,8*S,5*S,'#ffe07d')}
  const active=t-hitAt<260,pose=active?'jump':moving?Math.floor(q*52)%2?'walk':'run':'idle';player(hx+(active?Math.sin((t-hitAt)/260*Math.PI)*24*S:0),G-2,pose,pose==='walk'||pose==='jump',94*S);
