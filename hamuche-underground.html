@@ -6,8 +6,9 @@ const $=id=>document.getElementById(id),canvas=$('cv'),ctx=canvas.getContext('2d
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)},mix=(a,b,q)=>a+(b-a)*q;
 let W,H,D,S,G,view,maxScroll,p=0,target=0,previous=0,now=0,last=0,hitAt=-10000,particles=[],finished=false,loaded=0;
 const CITY=.27,SHAFT=.39,ARENA=.77;
-// Keep the original scroll distance for the first three stages, double the ruins only.
-const RUINS_SCROLL_MULTIPLIER=2, RUINS_MIN_SECONDS=4;
+// Slow all scroll stages, retaining extra scroll distance and a speed cap in the ruins.
+const ADVENTURE_SCROLL_MULTIPLIER=2, MAX_PROGRESS_PER_SECOND=.065;
+const RUINS_SCROLL_MULTIPLIER=2, RUINS_MIN_SECONDS=8;
 const SCROLL_WEIGHT=ARENA+(1-ARENA)*RUINS_SCROLL_MULTIPLIER;
 function progressFromScroll(fraction){const d=clamp(fraction)*SCROLL_WEIGHT;return d<=ARENA?d:ARENA+(d-ARENA)/RUINS_SCROLL_MULTIPLIER}
 function scrollFromProgress(v){v=clamp(v);return (v<=ARENA?v:ARENA+(v-ARENA)*RUINS_SCROLL_MULTIPLIER)/SCROLL_WEIGHT}
@@ -87,13 +88,13 @@ function ruins(q,moving){
  player(x,G-2,pose,pose==='walk',88*S);
  if(q>.90)text('EXIT →',Math.min(W-65,x+75),G-105*S,20,'#a5efcc');
 }
-function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);S=Math.max(.62,Math.min(1.5,W/400,H/570));G=H*.77;view=W/S;$('track').style.height=Math.round(H*(1+10*SCROLL_WEIGHT))+'px';maxScroll=Math.max(1,document.documentElement.scrollHeight-H)}
+function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);S=Math.max(.62,Math.min(1.5,W/400,H/570));G=H*.77;view=W/S;$('track').style.height=Math.round(H*(1+10*SCROLL_WEIGHT*ADVENTURE_SCROLL_MULTIPLIER))+'px';maxScroll=Math.max(1,document.documentElement.scrollHeight-H)}
 function go(v){scrollTo({top:scrollFromProgress(v)*maxScroll,behavior:'auto'})}
 function reset(){gates.forEach(o=>o.hp=o.max);finished=false;particles=[];hitAt=-1e4;activeGate=null;gateClock=0;ruinsEntry='normal';ruinsEntryTime=0;$('end').style.display='none';go(0);p=target=previous=0}
 let activeGate=null,gateClock=0;
 // Discard scroll accumulated while the final shutter was blocking movement.
 let ruinsEntry='normal',ruinsEntryTime=0,lastWheelAt=-Infinity;
-const ENTRY_HIT_HOLD=300,ENTRY_WALK_MS=650;
+const ENTRY_HIT_HOLD=450,ENTRY_WALK_MS=1300;
 function pinRuinsScroll(){const y=scrollFromProgress(ARENA)*maxScroll;if(Math.abs(scrollY-y)>1)scrollTo({top:y,behavior:'instant'})}
 function releaseRuinsEntry(){if(ruinsEntry!=='waiting')return;pinRuinsScroll();ruinsEntry='released';}
 window.addEventListener('touchstart',releaseRuinsEntry,{passive:true});
@@ -122,8 +123,9 @@ function advance(raw,dt,t){
   if(gates[gates.length-1].hp>0){ruinsEntry='normal';ruinsEntryTime=0}
   target=raw;
  }
- const before=p;let step=mix(p,target,1-Math.exp(-dt*11));if(Math.abs(step-target)<.00015)step=target;
- // Even a fast flick cannot skip the final scenery. Forward traversal takes at least four seconds.
+ const before=p;let step=mix(p,target,1-Math.exp(-dt*6));if(Math.abs(step-target)<.00015)step=target;
+ step=before+Math.max(-dt*MAX_PROGRESS_PER_SECOND,Math.min(dt*MAX_PROGRESS_PER_SECOND,step-before));
+ // Even a fast flick cannot skip the final scenery. Forward traversal takes at least eight seconds.
  if(step>ARENA&&step>before)step=Math.min(step,Math.max(ARENA,before)+dt*(1-ARENA)/RUINS_MIN_SECONDS);
  p=step;
  const current=gate();
@@ -131,7 +133,7 @@ function advance(raw,dt,t){
   p=current.at;
   if(activeGate!==current){activeGate=current;gateClock=0}
   gateClock+=dt*1000;
-  if(gateClock>= (current.hp===current.max?190:340)){
+  if(gateClock>= (current.hp===current.max?300:520)){
    strike(current,t);gateClock=0;
    if(current.hp===0){activeGate=null;gateClock=0;
     if(current===gates[gates.length-1]){ruinsEntry='arriving';ruinsEntryTime=0;target=p;pinRuinsScroll()}
@@ -144,5 +146,5 @@ function frame(t){const dt=Math.min(.05,(t-last)/1000||.016);last=t;const raw=pr
  const stage=p<CITY?0:p<SHAFT?1:p<ARENA?2:3;$('title').textContent=['01 / ネオン街','02 / マンホール通路','03 / 地下闘技場','04 / 廃ビル'][stage];$('status').textContent=stage===2?'突破 '+gates.filter(o=>o.hp===0).length+' / '+gates.length:'POWER MAX';$('hint').textContent=ruinsEntry==='waiting'?'スクロールして廃ビルを進もう':ruinsEntry==='arriving'?'ドアを突破！':activeGate?'ハムチェがパンチで突破中…':['スクロールでネオン街を進む','スクロールで地下へ降りる','スクロールで自動パンチ','廃ビルの出口を目指せ'][stage];$('fill').style.width=(p*100)+'%';
  if(p>.999&&!finished){finished=true;$('end').style.display='grid'}else if(p<.995&&finished){finished=false;$('end').style.display='none'}
  previous=p;requestAnimationFrame(frame)}
-$('reset').onclick=reset;window.addEventListener('resize',resize);resize();requestAnimationFrame(frame);setTimeout(()=>$('loader').hidden=true,2500);window.__undergroundQA=()=>({p,target,stage:$('title').textContent,loaded,gates:gates.map(x=>({...x})),limit:limit(),automatic:true,ruinsScrollMultiplier:RUINS_SCROLL_MULTIPLIER,ruinsMinSeconds:RUINS_MIN_SECONDS,ruinsEntry,ruinsEntryTime,activeGate:activeGate?.type??null,backgrounds:Object.keys(artCache).map(k=>({k,w:artCache[k].naturalWidth,h:artCache[k].naturalHeight}))});})();
+$('reset').onclick=reset;window.addEventListener('resize',resize);resize();requestAnimationFrame(frame);setTimeout(()=>$('loader').hidden=true,2500);window.__undergroundQA=()=>({p,target,stage:$('title').textContent,loaded,gates:gates.map(x=>({...x})),limit:limit(),automatic:true,scrollMultiplier:ADVENTURE_SCROLL_MULTIPLIER,maxProgressPerSecond:MAX_PROGRESS_PER_SECOND,ruinsScrollMultiplier:RUINS_SCROLL_MULTIPLIER,ruinsMinSeconds:RUINS_MIN_SECONDS,ruinsEntry,ruinsEntryTime,activeGate:activeGate?.type??null,backgrounds:Object.keys(artCache).map(k=>({k,w:artCache[k].naturalWidth,h:artCache[k].naturalHeight}))});})();
 </script></body></html>
