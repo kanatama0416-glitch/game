@@ -1,0 +1,37 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1b5384"><title>HAMCHELLO QUEST｜ハムチェッロの大冒険</title><meta name="description" content="横浜から東京・石川・きゅうり王国・監獄・アングラ世界・イギリスの夜明けへ。ハムチェッロの冒険を最初から最後まで。"><style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#3caee4;color:#14364c;font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',sans-serif}
+body{min-height:100dvh;overflow:hidden;display:grid;place-items:center}
+.sky{position:fixed;inset:0;background:linear-gradient(180deg,#269ed4,#74cce9 74%,#bcecf3);overflow:hidden}
+.cloud{position:absolute;top:12%;left:8%;width:95px;height:24px;background:#fff;box-shadow:24px -20px 0 0 #fff,51px -10px 0 #fff;clip-path:polygon(0% 100%,0% 25%,20% 25%,20% 0%,70% 0%,70% 25%,100% 25%,100% 100%)}
+.cloud.two{left:auto;right:11%;top:25%;transform:scale(.65);opacity:.86}
+.skyline{position:absolute;inset:auto 0 19% 0;height:24%;background:repeating-linear-gradient(90deg,#7dc4d4 0 25px,#8ec9dc 25px 40px,#5ab0cf 40px 71px,#b2d6dd 71px 95px);clip-path:polygon(0% 59%,5% 59%,5% 36%,13% 36%,13% 73%,18% 73%,18% 30%,23% 30%,23% 64%,28% 64%,28% 43%,33% 43%,33% 73%,39% 73%,39% 24%,46% 24%,46% 53%,51% 53%,51% 72%,57% 72%,57% 38%,65% 38%,65% 71%,71% 71%,71% 27%,77% 27%,77% 56%,84% 56%,84% 38%,90% 38%,90% 69%,100% 69%,100% 100%,0 100%)}
+.ground{position:absolute;inset:auto 0 0;height:19%;background:repeating-linear-gradient(135deg,#976847 0 19px,#af7c55 19px 38px);border-top:12px solid #4ac45a}
+main{position:relative;z-index:1;margin:25px;width:min(620px,calc(100vw - 30px));border:5px solid #1f4962;background:#fffae9;padding:clamp(18px,5vw,34px);box-shadow:7px 9px 0 #163d5966;display:grid;gap:18px;text-align:center}
+small{font-size:11px;letter-spacing:.26em;font-weight:900;color:#426977}
+h1{margin:0;font-weight:1000;font-size:clamp(30px,8vw,58px);letter-spacing:.01em;line-height:1.25}
+p{margin:0;line-height:1.8;font-weight:800;font-size:clamp(13px,3.5vw,17px)}
+.route{font-size:12px;font-weight:800;line-height:1.8;color:#426477;max-width:490px;margin:auto}
+.meter{height:10px;border:2px solid #2e5f73;background:#cee8e4;overflow:hidden}.meter div{height:100%;width:0;background:#ec8565;animation:load 1.4s linear forwards}
+@keyframes load{to{width:100%}}
+a{color:#1c5575;font-size:14px;font-weight:900}
+@media(prefers-reduced-motion:reduce){.meter div{animation:none;width:100%}}
+</style></head><body>
+<div class="sky" aria-hidden="true"><div class="cloud"></div><div class="cloud two"></div><div class="skyline"></div><div class="ground"></div></div>
+<main><small>HAMCHELLO QUEST / FULL ADVENTURE</small><h1>ハムチェッロの大冒険</h1><p>横浜から、最後の朝日まで。</p>
+<div class="route">横浜 → 東京 → 石川 → きゅうり王国 → カンフー → 監獄 → アングラワールド → 決戦 → イギリスの夜明け → 力こそPOWER</div>
+<div class="meter" aria-label="ゲームを開いています"><div></div></div><p id="msg">冒険の世界へ向かっています…</p>
+<a id="open" href="https://kanatama0416-glitch.github.io/profile-kanachi/hamcello-worlds-connected.html?story=1">すぐに冒険を始める</a>
+</main>
+<script>
+(()=>{'use strict';const start='https://kanatama0416-glitch.github.io/profile-kanachi/hamcello-worlds-connected.html?story=1&from=full-adventure';
+const routes=[start,'https://kanatama0416-glitch.github.io/game/hamuche-kungfu.html?story=1','hamuche-prison.html?story=1','hamuche-underground.html?story=1','hamuche-final-battle.html?story=1','hamuche-epilogue.html?story=1'];
+let url=start;
+if(new URLSearchParams(location.search).get('resume')==='1'){
+ try{const i=Number(sessionStorage.getItem('hamuche-story-checkpoint'));if(Number.isInteger(i)&&i>=0&&i<routes.length)url=routes[i]}catch(_){}
+}
+document.getElementById('open').href=url;
+const go=()=>location.replace(url);
+document.getElementById('open').addEventListener('click',e=>{e.preventDefault();go()});
+setTimeout(go,1250);
+})();
+</script></body></html>
