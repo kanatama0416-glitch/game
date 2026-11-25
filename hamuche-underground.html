@@ -114,7 +114,7 @@ function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);c
 function go(v){scrollTo({top:scrollFromProgress(v)*maxScroll,behavior:'auto'})}
 function reset(){cancelEndTransition();gates.forEach(o=>o.hp=o.max);finished=false;particles=[];hitAt=-1e4;activeGate=null;gateClock=0;ruinsEntry='normal';ruinsEntryTime=0;$('end').style.display='none';go(0);p=target=previous=0}
 let activeGate=null,gateClock=0,policeElapsed=0,policeDeparted=false;
-const FINAL_BATTLE_URL='hamuche-final-battle.html?story=1&v=823d27b3';
+const FINAL_BATTLE_URL='hamuche-final-battle.html?story=1&v=full-20261125';
 function cancelEndTransition(){policeElapsed=0;policeDeparted=false;$('hud').style.opacity='';$('hud').style.visibility=''}
 function completeUnderground(){finished=true;cancelEndTransition();p=target=1;syncScroll(1)}
 // No automatic walking or queued momentum. Touch movement maps directly to page scroll.
