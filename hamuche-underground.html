@@ -6,6 +6,11 @@ const $=id=>document.getElementById(id),canvas=$('cv'),ctx=canvas.getContext('2d
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)},mix=(a,b,q)=>a+(b-a)*q;
 let W,H,D,S,G,view,maxScroll,p=0,target=0,previous=0,now=0,last=0,hitAt=-10000,particles=[],finished=false,loaded=0;
 const CITY=.27,SHAFT=.39,ARENA=.77;
+// Keep the original scroll distance for the first three stages, double the ruins only.
+const RUINS_SCROLL_MULTIPLIER=2, RUINS_MIN_SECONDS=4;
+const SCROLL_WEIGHT=ARENA+(1-ARENA)*RUINS_SCROLL_MULTIPLIER;
+function progressFromScroll(fraction){const d=clamp(fraction)*SCROLL_WEIGHT;return d<=ARENA?d:ARENA+(d-ARENA)/RUINS_SCROLL_MULTIPLIER}
+function scrollFromProgress(v){v=clamp(v);return (v<=ARENA?v:ARENA+(v-ARENA)*RUINS_SCROLL_MULTIPLIER)/SCROLL_WEIGHT}
 const gates=[{at:.425,type:'barrel',hp:2,max:2},{at:.488,type:'enemy',hp:2,max:2},{at:.551,type:'crate',hp:2,max:2},{at:.614,type:'enemy2',hp:3,max:3},{at:.677,type:'guard',hp:3,max:3},{at:.735,type:'shutter',hp:3,max:3}];
 const stops=[0,.065,.135,.205,.269,.33,.39,...gates.map(o=>o.at),.77,.86,.94,1];
 const valid=i=>i&&i.complete&&i.naturalWidth>0;
@@ -82,8 +87,8 @@ function ruins(q,moving){
  player(x,G-2,pose,pose==='walk',88*S);
  if(q>.90)text('EXIT →',Math.min(W-65,x+75),G-105*S,20,'#a5efcc');
 }
-function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);S=Math.max(.62,Math.min(1.5,W/400,H/570));G=H*.77;view=W/S;maxScroll=Math.max(1,document.documentElement.scrollHeight-H)}
-function go(v){scrollTo({top:clamp(v)*maxScroll,behavior:'auto'})}
+function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);S=Math.max(.62,Math.min(1.5,W/400,H/570));G=H*.77;view=W/S;$('track').style.height=Math.round(H*(1+10*SCROLL_WEIGHT))+'px';maxScroll=Math.max(1,document.documentElement.scrollHeight-H)}
+function go(v){scrollTo({top:scrollFromProgress(v)*maxScroll,behavior:'auto'})}
 function reset(){gates.forEach(o=>o.hp=o.max);finished=false;particles=[];hitAt=-1e4;activeGate=null;gateClock=0;$('end').style.display='none';go(0);p=target=previous=0}
 let activeGate=null,gateClock=0;
 function strike(o,t){if(!o||o.hp<=0)return;hitAt=t;o.hp--;const hx=(arenaWorld(qFor(p))-cam(arenaWorld(qFor(p)),1650))*S;for(let i=0;i<16;i++)particles.push({x:hx+85*S,y:G-54*S,vx:Math.cos(i*2.4)*75,vy:-Math.abs(Math.sin(i*2.4))*90,t:hitAt,col:i%2?'#ffd55f':'#e88954'})}
@@ -97,7 +102,10 @@ function advance(raw,dt,t){
   for(const g of gates)if(raw<g.at-.018)g.hp=g.max;
   target=raw;
  }
- p=mix(p,target,1-Math.exp(-dt*11));if(Math.abs(p-target)<.00015)p=target;
+ const before=p;let step=mix(p,target,1-Math.exp(-dt*11));if(Math.abs(step-target)<.00015)step=target;
+ // Even a fast flick cannot skip the final scenery. Forward traversal takes at least four seconds.
+ if(step>ARENA&&step>before)step=Math.min(step,Math.max(ARENA,before)+dt*(1-ARENA)/RUINS_MIN_SECONDS);
+ p=step;
  const current=gate();
  if(current&&raw>=current.at-.0001&&Math.abs(p-current.at)<.0018){
   p=current.at;
@@ -109,10 +117,10 @@ function advance(raw,dt,t){
   }
  }else {activeGate=null;gateClock=0}
 }
-function frame(t){const dt=Math.min(.05,(t-last)/1000||.016);last=t;const raw=clamp(scrollY/maxScroll);advance(raw,dt,t);ctx.setTransform(D,0,0,D,0,0);const moving=Math.abs(p-previous)>.00005;
+function frame(t){const dt=Math.min(.05,(t-last)/1000||.016);last=t;const raw=progressFromScroll(scrollY/maxScroll);advance(raw,dt,t);ctx.setTransform(D,0,0,D,0,0);const moving=Math.abs(p-previous)>.00005;
  if(p<CITY)city(p/CITY,moving);else if(p<SHAFT)shaft((p-CITY)/(SHAFT-CITY));else if(p<ARENA)arena(moving,t);else ruins(clamp((p-ARENA)/(1-ARENA)),moving);
  const stage=p<CITY?0:p<SHAFT?1:p<ARENA?2:3;$('title').textContent=['01 / ネオン街','02 / マンホール通路','03 / 地下闘技場','04 / 廃ビル'][stage];$('status').textContent=stage===2?'突破 '+gates.filter(o=>o.hp===0).length+' / '+gates.length:'POWER MAX';$('hint').textContent=activeGate?'ハムチェがパンチで突破中…':['スクロールでネオン街を進む','スクロールで地下へ降りる','スクロールで自動パンチ','廃ビルの出口を目指せ'][stage];$('fill').style.width=(p*100)+'%';
  if(p>.999&&!finished){finished=true;$('end').style.display='grid'}else if(p<.995&&finished){finished=false;$('end').style.display='none'}
  previous=p;requestAnimationFrame(frame)}
-$('reset').onclick=reset;window.addEventListener('resize',resize);resize();requestAnimationFrame(frame);setTimeout(()=>$('loader').hidden=true,2500);window.__undergroundQA=()=>({p,target,stage:$('title').textContent,loaded,gates:gates.map(x=>({...x})),limit:limit(),automatic:true,activeGate:activeGate?.type??null,backgrounds:Object.keys(artCache).map(k=>({k,w:artCache[k].naturalWidth,h:artCache[k].naturalHeight}))});})();
+$('reset').onclick=reset;window.addEventListener('resize',resize);resize();requestAnimationFrame(frame);setTimeout(()=>$('loader').hidden=true,2500);window.__undergroundQA=()=>({p,target,stage:$('title').textContent,loaded,gates:gates.map(x=>({...x})),limit:limit(),automatic:true,ruinsScrollMultiplier:RUINS_SCROLL_MULTIPLIER,ruinsMinSeconds:RUINS_MIN_SECONDS,activeGate:activeGate?.type??null,backgrounds:Object.keys(artCache).map(k=>({k,w:artCache[k].naturalWidth,h:artCache[k].naturalHeight}))});})();
 </script></body></html>
