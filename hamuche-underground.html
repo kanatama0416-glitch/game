@@ -7,7 +7,7 @@ const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),smooth=x=>{x=clamp(x);return 
 let W,H,D,S,G,view,maxScroll,p=0,target=0,previous=0,now=0,last=0,hitAt=-10000,particles=[],finished=false,loaded=0;
 const CITY=.27,SHAFT=.39,ARENA=.77;
 // Slow by increasing physical scroll distance, not by queuing automatic camera travel.
-const ADVENTURE_SCROLL_MULTIPLIER=2, RUINS_SCROLL_MULTIPLIER=2;
+const ADVENTURE_SCROLL_MULTIPLIER=1.25, RUINS_SCROLL_MULTIPLIER=1.6;
 const SCROLL_WEIGHT=ARENA+(1-ARENA)*RUINS_SCROLL_MULTIPLIER;
 function progressFromScroll(fraction){const d=clamp(fraction)*SCROLL_WEIGHT;return d<=ARENA?d:ARENA+(d-ARENA)/RUINS_SCROLL_MULTIPLIER}
 function scrollFromProgress(v){v=clamp(v);return (v<=ARENA?v:ARENA+(v-ARENA)*RUINS_SCROLL_MULTIPLIER)/SCROLL_WEIGHT}
