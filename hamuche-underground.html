@@ -92,29 +92,22 @@ function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,3);c
 function go(v){scrollTo({top:scrollFromProgress(v)*maxScroll,behavior:'auto'})}
 function reset(){gates.forEach(o=>o.hp=o.max);finished=false;particles=[];hitAt=-1e4;activeGate=null;gateClock=0;ruinsEntry='normal';ruinsEntryTime=0;$('end').style.display='none';go(0);p=target=previous=0}
 let activeGate=null,gateClock=0;
-// Discard scroll accumulated while the final shutter was blocking movement.
-let ruinsEntry='normal',ruinsEntryTime=0,lastWheelAt=-Infinity;
+// Pause for the shutter animation only; never lock native scroll at the ruins entrance.
+let ruinsEntry='normal',ruinsEntryTime=0;
 const ENTRY_HIT_HOLD=450,ENTRY_WALK_MS=1300;
-function pinRuinsScroll(){const y=scrollFromProgress(ARENA)*maxScroll;if(Math.abs(scrollY-y)>1)scrollTo({top:y,behavior:'instant'})}
-function releaseRuinsEntry(){if(ruinsEntry!=='waiting')return;pinRuinsScroll();ruinsEntry='released';}
-window.addEventListener('touchstart',releaseRuinsEntry,{passive:true});
-window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||e.pointerType==='pen')releaseRuinsEntry()},{passive:true});
-window.addEventListener('wheel',e=>{const t=performance.now(),fresh=t-lastWheelAt>220;lastWheelAt=t;if(fresh&&e.deltaY!==0)releaseRuinsEntry()},{passive:true});
-window.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Space','End','Home'].includes(e.code))releaseRuinsEntry()});
+function pinRuinsScroll(){const y=scrollFromProgress(ARENA)*maxScroll;if(Math.abs(scrollY-y)>1)window.scrollTo(0,Math.round(y))}
 function strike(o,t){if(!o||o.hp<=0)return;hitAt=t;o.hp--;const hx=(arenaWorld(qFor(p))-cam(arenaWorld(qFor(p)),1650))*S;for(let i=0;i<16;i++)particles.push({x:hx+85*S,y:G-54*S,vx:Math.cos(i*2.4)*75,vy:-Math.abs(Math.sin(i*2.4))*90,t:hitAt,col:i%2?'#ffd55f':'#e88954'})}
 // Every obstacle is triggered by scrolling towards it, including a fast flick to the end.
 // Hold the world position until all automatic punches finish; never require a tap.
 function advance(raw,dt,t){
- // The last punch is shown before walking to the ruins entrance. Ignore all
- // old touch momentum and scrolling until an entirely new gesture begins.
+ // Show the last punch and entrance animation; release native scroll afterwards.
  if(ruinsEntry==='arriving'){
-  pinRuinsScroll();ruinsEntryTime+=dt*1000;
+  ruinsEntryTime+=dt*1000;
   const shutter=gates[gates.length-1];
   p=shutter.at+(ARENA-shutter.at)*smooth((ruinsEntryTime-ENTRY_HIT_HOLD)/ENTRY_WALK_MS);target=p;
-  if(ruinsEntryTime>=ENTRY_HIT_HOLD+ENTRY_WALK_MS){p=target=ARENA;ruinsEntry='waiting';pinRuinsScroll()}
+  if(ruinsEntryTime>=ENTRY_HIT_HOLD+ENTRY_WALK_MS){p=target=ARENA;ruinsEntry='released';pinRuinsScroll()}
   return;
  }
- if(ruinsEntry==='waiting'){pinRuinsScroll();p=target=ARENA;return}
  const o=gate();target=Math.min(raw,o?o.at:1);
  if(raw<p-.003){
   // Scrolling backwards is always allowed and resets obstacles ahead of the view.
@@ -136,14 +129,14 @@ function advance(raw,dt,t){
   if(gateClock>= (current.hp===current.max?300:520)){
    strike(current,t);gateClock=0;
    if(current.hp===0){activeGate=null;gateClock=0;
-    if(current===gates[gates.length-1]){ruinsEntry='arriving';ruinsEntryTime=0;target=p;pinRuinsScroll()}
+    if(current===gates[gates.length-1]){ruinsEntry='arriving';ruinsEntryTime=0;target=p}
    }
   }
  }else {activeGate=null;gateClock=0}
 }
 function frame(t){const dt=Math.min(.05,(t-last)/1000||.016);last=t;const raw=progressFromScroll(scrollY/maxScroll);advance(raw,dt,t);ctx.setTransform(D,0,0,D,0,0);const moving=Math.abs(p-previous)>.00005;
  if(p<CITY)city(p/CITY,moving);else if(p<SHAFT)shaft((p-CITY)/(SHAFT-CITY));else if(p<ARENA)arena(moving,t);else ruins(clamp((p-ARENA)/(1-ARENA)),moving);
- const stage=p<CITY?0:p<SHAFT?1:p<ARENA?2:3;$('title').textContent=['01 / ネオン街','02 / マンホール通路','03 / 地下闘技場','04 / 廃ビル'][stage];$('status').textContent=stage===2?'突破 '+gates.filter(o=>o.hp===0).length+' / '+gates.length:'POWER MAX';$('hint').textContent=ruinsEntry==='waiting'?'スクロールして廃ビルを進もう':ruinsEntry==='arriving'?'ドアを突破！':activeGate?'ハムチェがパンチで突破中…':['スクロールでネオン街を進む','スクロールで地下へ降りる','スクロールで自動パンチ','廃ビルの出口を目指せ'][stage];$('fill').style.width=(p*100)+'%';
+ const stage=p<CITY?0:p<SHAFT?1:p<ARENA?2:3;$('title').textContent=['01 / ネオン街','02 / マンホール通路','03 / 地下闘技場','04 / 廃ビル'][stage];$('status').textContent=stage===2?'突破 '+gates.filter(o=>o.hp===0).length+' / '+gates.length:'POWER MAX';$('hint').textContent=ruinsEntry==='arriving'?'ドアを突破！':activeGate?'ハムチェがパンチで突破中…':['スクロールでネオン街を進む','スクロールで地下へ降りる','スクロールで自動パンチ','廃ビルの出口を目指せ'][stage];$('fill').style.width=(p*100)+'%';
  if(p>.999&&!finished){finished=true;$('end').style.display='grid'}else if(p<.995&&finished){finished=false;$('end').style.display='none'}
  previous=p;requestAnimationFrame(frame)}
 $('reset').onclick=reset;window.addEventListener('resize',resize);resize();requestAnimationFrame(frame);setTimeout(()=>$('loader').hidden=true,2500);window.__undergroundQA=()=>({p,target,stage:$('title').textContent,loaded,gates:gates.map(x=>({...x})),limit:limit(),automatic:true,scrollMultiplier:ADVENTURE_SCROLL_MULTIPLIER,maxProgressPerSecond:MAX_PROGRESS_PER_SECOND,ruinsScrollMultiplier:RUINS_SCROLL_MULTIPLIER,ruinsMinSeconds:RUINS_MIN_SECONDS,ruinsEntry,ruinsEntryTime,activeGate:activeGate?.type??null,backgrounds:Object.keys(artCache).map(k=>({k,w:artCache[k].naturalWidth,h:artCache[k].naturalHeight}))});})();
